@@ -1,0 +1,34 @@
+{
+  "name": "jenkins-2.479",
+  "secfixes": {
+    "0": [
+      "CVE-2025-31720",
+      "CVE-2025-31721",
+      "GHSA-565r-pf5q-45v6",
+      "GHSA-wr6w-jxg7-qpfh"
+    ],
+    "2.479.1-r1": [
+      "CVE-2024-47072",
+      "GHSA-hfq9-hggm-c56q"
+    ],
+    "2.479.1-r2": [
+      "CVE-2024-52549",
+      "GHSA-jv82-75fh-23r7"
+    ],
+    "2.479.2-r0": [
+      "CVE-2024-47855",
+      "GHSA-wwcp-26wc-3fxm"
+    ],
+    "2.479.3-r1": [
+      "CVE-2025-22228",
+      "GHSA-mg83-c7gq-rv5c"
+    ]
+  },
+  "apkurl": "{{urlprefix}}/{{reponame}}/{{arch}}/{{pkg.name}}-{{pkg.ver}}.apk",
+  "archs": [
+    "aarch64",
+    "x86_64"
+  ],
+  "urlprefix": "https://packages.cgr.dev",
+  "reponame": "chainguard"
+}

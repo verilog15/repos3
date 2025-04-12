@@ -1,0 +1,20 @@
+{
+  "name": "jenkins-2.492",
+  "secfixes": {
+    "2.492.2-r1": [
+      "CVE-2025-22228",
+      "GHSA-mg83-c7gq-rv5c"
+    ],
+    "2.492.2-r2": [
+      "CVE-2025-22223",
+      "GHSA-hh3m-g4qj-4835"
+    ]
+  },
+  "apkurl": "{{urlprefix}}/{{reponame}}/{{arch}}/{{pkg.name}}-{{pkg.ver}}.apk",
+  "archs": [
+    "aarch64",
+    "x86_64"
+  ],
+  "urlprefix": "https://packages.cgr.dev",
+  "reponame": "chainguard"
+}

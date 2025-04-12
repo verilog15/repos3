@@ -1,0 +1,44 @@
+{
+  "name": "amazon-cloudwatch-agent",
+  "secfixes": {
+    "0": [
+      "CVE-2019-3826",
+      "GHSA-3m87-5598-2v4f"
+    ],
+    "1.300051.0-r1": [
+      "CVE-2024-45337",
+      "GHSA-v778-237x-gjrc"
+    ],
+    "1.300051.0-r2": [
+      "CVE-2024-45338",
+      "GHSA-w32m-9786-jp63"
+    ],
+    "1.300052.0-r1": [
+      "CVE-2025-22866",
+      "GHSA-3whm-j4xm-rv8x"
+    ],
+    "1.300053.0-r7": [
+      "CVE-2025-22868"
+    ],
+    "1.300053.1-r1": [
+      "CVE-2025-29786",
+      "GHSA-93mq-9ffx-83m2"
+    ],
+    "1.300054.0-r1": [
+      "CVE-2025-22869",
+      "CVE-2025-22870",
+      "GHSA-qxp5-gwg8-xv66"
+    ],
+    "1.300054.0-r2": [
+      "CVE-2025-30204",
+      "GHSA-mh63-6h87-95cp"
+    ]
+  },
+  "apkurl": "{{urlprefix}}/{{reponame}}/{{arch}}/{{pkg.name}}-{{pkg.ver}}.apk",
+  "archs": [
+    "x86_64",
+    "aarch64"
+  ],
+  "urlprefix": "https://packages.wolfi.dev",
+  "reponame": "os"
+}

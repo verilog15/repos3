@@ -1,0 +1,16 @@
+{
+  "name": "hadoop-fips-3.3.6",
+  "secfixes": {
+    "3.3.6-r1": [
+      "CVE-2024-38374",
+      "GHSA-683x-4444-jxh8"
+    ]
+  },
+  "apkurl": "{{urlprefix}}/{{reponame}}/{{arch}}/{{pkg.name}}-{{pkg.ver}}.apk",
+  "archs": [
+    "aarch64",
+    "x86_64"
+  ],
+  "urlprefix": "https://packages.cgr.dev",
+  "reponame": "chainguard"
+}

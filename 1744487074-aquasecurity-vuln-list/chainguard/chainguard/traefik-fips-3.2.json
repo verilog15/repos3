@@ -1,0 +1,58 @@
+{
+  "name": "traefik-fips-3.2",
+  "secfixes": {
+    "3.2.0-r1": [
+      "CVE-2024-51744",
+      "GHSA-29wx-vh33-7x7r"
+    ],
+    "3.2.1-r1": [
+      "CVE-2024-53259",
+      "GHSA-px8v-pp82-rcvr"
+    ],
+    "3.2.2-r1": [
+      "CVE-2024-45337",
+      "GHSA-v778-237x-gjrc"
+    ],
+    "3.2.3-r1": [
+      "CVE-2024-45338",
+      "GHSA-w32m-9786-jp63"
+    ],
+    "3.2.4-r0": [
+      "CVE-2024-28180",
+      "GHSA-c5q2-7r4c-mv6g"
+    ],
+    "3.2.5-r3": [
+      "CVE-2025-22866",
+      "GHSA-3whm-j4xm-rv8x"
+    ],
+    "3.2.5-r4": [
+      "CVE-2025-27144",
+      "GHSA-c6gw-w398-hv78"
+    ],
+    "3.2.5-r5": [
+      "CVE-2025-22869"
+    ],
+    "3.2.5-r6": [
+      "CVE-2025-22868"
+    ],
+    "3.2.5-r7": [
+      "CVE-2025-22870",
+      "GHSA-qxp5-gwg8-xv66"
+    ],
+    "3.2.5-r8": [
+      "CVE-2025-30204",
+      "GHSA-mh63-6h87-95cp"
+    ],
+    "3.2.5-r9": [
+      "CVE-2025-22871",
+      "GHSA-g9pc-8g42-g6vq"
+    ]
+  },
+  "apkurl": "{{urlprefix}}/{{reponame}}/{{arch}}/{{pkg.name}}-{{pkg.ver}}.apk",
+  "archs": [
+    "aarch64",
+    "x86_64"
+  ],
+  "urlprefix": "https://packages.cgr.dev",
+  "reponame": "chainguard"
+}

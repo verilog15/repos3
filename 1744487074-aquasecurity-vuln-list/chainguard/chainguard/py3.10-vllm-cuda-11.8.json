@@ -1,0 +1,52 @@
+{
+  "name": "py3.10-vllm-cuda-11.8",
+  "secfixes": {
+    "0.6.4-r0": [
+      "CVE-2024-37891",
+      "CVE-2024-47554",
+      "CVE-2024-47874",
+      "GHSA-34jh-p97f-mpxf",
+      "GHSA-78wr-2p64-hpwj",
+      "GHSA-f96h-pmfr-66vw"
+    ],
+    "0.6.5-r0": [
+      "CVE-2024-52303",
+      "GHSA-27mf-ghqm-j3j8"
+    ],
+    "0.6.5-r1": [
+      "CVE-2024-52304",
+      "GHSA-8495-4g3g-x7pr"
+    ],
+    "0.6.6-r0": [
+      "CVE-2024-56201",
+      "CVE-2024-56326",
+      "GHSA-gmj6-6f8f-6699",
+      "GHSA-q2x7-8rv6-6q7h"
+    ],
+    "0.7.2-r0": [
+      "CVE-2025-24357",
+      "CVE-2025-25183",
+      "GHSA-rh4j-5rhw-hr54",
+      "GHSA-rm76-4mrf-v9r8"
+    ],
+    "0.7.3-r1": [
+      "CVE-2025-27516",
+      "GHSA-cpwx-vrp4-4pq7"
+    ],
+    "0.8.2-r0": [
+      "CVE-2024-9052",
+      "CVE-2025-29770",
+      "CVE-2025-29783",
+      "GHSA-mgrm-fgjv-mhv8",
+      "GHSA-pgr7-mhp5-fgjp",
+      "GHSA-x3m8-f7g5-qhm7"
+    ]
+  },
+  "apkurl": "{{urlprefix}}/{{reponame}}/{{arch}}/{{pkg.name}}-{{pkg.ver}}.apk",
+  "archs": [
+    "aarch64",
+    "x86_64"
+  ],
+  "urlprefix": "https://packages.cgr.dev",
+  "reponame": "chainguard"
+}

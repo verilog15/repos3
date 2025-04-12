@@ -1,0 +1,24 @@
+{
+  "name": "apache-pulsar",
+  "secfixes": {
+    "0": [
+      "CVE-2025-25193",
+      "GHSA-389x-839f-4rhx"
+    ],
+    "4.0.1-r1": [
+      "CVE-2024-53990",
+      "GHSA-mfj5-cf8g-g2fv"
+    ],
+    "4.0.3-r0": [
+      "CVE-2025-24970",
+      "GHSA-4g8c-wm8x-jfhw"
+    ]
+  },
+  "apkurl": "{{urlprefix}}/{{reponame}}/{{arch}}/{{pkg.name}}-{{pkg.ver}}.apk",
+  "archs": [
+    "aarch64",
+    "x86_64"
+  ],
+  "urlprefix": "https://packages.cgr.dev",
+  "reponame": "chainguard"
+}

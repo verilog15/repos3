@@ -1,0 +1,36 @@
+{
+  "name": "portieris",
+  "secfixes": {
+    "0.13.22-r1": [
+      "CVE-2024-45337",
+      "GHSA-v778-237x-gjrc"
+    ],
+    "0.13.22-r2": [
+      "CVE-2024-45338",
+      "GHSA-w32m-9786-jp63"
+    ],
+    "0.13.23-r3": [
+      "CVE-2024-45339",
+      "GHSA-6wxm-mpqj-6jpf"
+    ],
+    "0.13.23-r4": [
+      "CVE-2025-22866",
+      "GHSA-3whm-j4xm-rv8x"
+    ],
+    "0.13.25-r1": [
+      "CVE-2025-22868"
+    ],
+    "0.13.25-r2": [
+      "CVE-2025-22869",
+      "CVE-2025-22870",
+      "GHSA-qxp5-gwg8-xv66"
+    ]
+  },
+  "apkurl": "{{urlprefix}}/{{reponame}}/{{arch}}/{{pkg.name}}-{{pkg.ver}}.apk",
+  "archs": [
+    "x86_64",
+    "aarch64"
+  ],
+  "urlprefix": "https://packages.wolfi.dev",
+  "reponame": "os"
+}

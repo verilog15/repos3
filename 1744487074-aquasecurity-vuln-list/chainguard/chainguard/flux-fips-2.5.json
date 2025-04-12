@@ -1,0 +1,26 @@
+{
+  "name": "flux-fips-2.5",
+  "secfixes": {
+    "2.5.1-r1": [
+      "CVE-2025-22869"
+    ],
+    "2.5.1-r2": [
+      "CVE-2025-22868"
+    ],
+    "2.5.1-r3": [
+      "CVE-2025-22870",
+      "GHSA-qxp5-gwg8-xv66"
+    ],
+    "2.5.1-r4": [
+      "CVE-2025-30204",
+      "GHSA-mh63-6h87-95cp"
+    ]
+  },
+  "apkurl": "{{urlprefix}}/{{reponame}}/{{arch}}/{{pkg.name}}-{{pkg.ver}}.apk",
+  "archs": [
+    "aarch64",
+    "x86_64"
+  ],
+  "urlprefix": "https://packages.cgr.dev",
+  "reponame": "chainguard"
+}
