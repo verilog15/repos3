@@ -1,0 +1,7 @@
+*.swp
+_build
+*.tmp
+__pycache__
+.viminfo
+*~
+tags
