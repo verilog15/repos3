@@ -1,0 +1,70 @@
+apply plugin: 'io.spring.convention.spring-module'
+
+configurations {
+	javascript {
+		canBeConsumed = false
+	}
+}
+
+def syncJavascript = tasks.register('syncJavascript', Sync) {
+	group = 'Build'
+	description = 'Syncs the Javascript from the javascript configuration'
+	into project.layout.buildDirectory.dir('spring-security-javascript')
+	from(configurations.javascript) {
+		into 'org/springframework/security'
+	}
+}
+
+
+sourceSets {
+	main {
+		resources {
+			srcDirs(syncJavascript)
+		}
+	}
+}
+
+dependencies {
+	javascript project(path: ':spring-security-javascript', configuration: 'javascript')
+	management platform(project(":spring-security-dependencies"))
+	api project(':spring-security-core')
+	api 'org.springframework:spring-core'
+	api 'org.springframework:spring-aop'
+	api 'org.springframework:spring-beans'
+	api 'org.springframework:spring-context'
+	api 'org.springframework:spring-expression'
+	api 'org.springframework:spring-web'
+
+	optional 'com.fasterxml.jackson.core:jackson-databind'
+	optional 'io.micrometer:context-propagation'
+	optional 'io.projectreactor:reactor-core'
+	optional 'org.springframework:spring-jdbc'
+	optional 'org.springframework:spring-tx'
+	optional 'org.springframework:spring-webflux'
+	optional 'org.springframework:spring-webmvc'
+	optional libs.webauthn4j.core
+
+	provided 'jakarta.servlet:jakarta.servlet-api'
+
+	testImplementation project(path: ':spring-security-core', configuration: 'tests')
+	testImplementation 'io.projectreactor:reactor-test'
+	testImplementation 'jakarta.xml.bind:jakarta.xml.bind-api'
+	testImplementation 'jakarta.websocket:jakarta.websocket-api'
+	testImplementation 'jakarta.websocket:jakarta.websocket-client-api'
+	testImplementation 'org.hamcrest:hamcrest'
+	testImplementation 'org.mockito:mockito-core'
+	testImplementation 'org.skyscreamer:jsonassert'
+	testImplementation 'org.springframework:spring-webflux'
+	testImplementation 'org.synchronoss.cloud:nio-multipart-parser'
+	testImplementation "org.assertj:assertj-core"
+	testImplementation "org.junit.jupiter:junit-jupiter-api"
+	testImplementation "org.junit.jupiter:junit-jupiter-params"
+	testImplementation "org.junit.jupiter:junit-jupiter-engine"
+	testImplementation "org.mockito:mockito-core"
+	testImplementation "org.mockito:mockito-junit-jupiter"
+	testImplementation "org.springframework:spring-test"
+	testImplementation 'com.squareup.okhttp3:mockwebserver'
+
+	testRuntimeOnly 'org.hsqldb:hsqldb'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
