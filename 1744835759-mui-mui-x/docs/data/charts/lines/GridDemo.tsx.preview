@@ -1,0 +1,7 @@
+<LineChart
+  dataset={dataset}
+  xAxis={[{ dataKey: 'x' }]}
+  series={[{ dataKey: 'y' }]}
+  height={300}
+  grid={{ vertical: true, horizontal: true }}
+/>
