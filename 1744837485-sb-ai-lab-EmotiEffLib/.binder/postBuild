@@ -1,0 +1,33 @@
+set -ex
+
+# Install dependencies
+python -m pip install --upgrade pip
+pip install -r requirements-binder-torch.txt
+pip install -r requirements-binder.txt
+pip install -r tests/requirements.txt
+
+# Export PYTHONPATH
+export PYTHONPATH=${HOME}:$PYTHONPATH
+
+# Download Libtorch and ONNXRuntime
+wget https://download.pytorch.org/libtorch/cpu/libtorch-cxx11-abi-shared-with-deps-2.6.0%2Bcpu.zip -O libtorch.zip
+wget https://github.com/microsoft/onnxruntime/releases/download/v1.20.1/onnxruntime-linux-x64-1.20.1.tgz -O onnxruntime.tgz
+unzip libtorch.zip
+mkdir onnxruntime
+tar -xzf onnxruntime.tgz -C onnxruntime --strip-components=1
+# Workaround for Linux build in CI
+cp -rf onnxruntime/lib onnxruntime/lib64
+
+# Download and unpack test data
+cd tests/
+./download_test_data.sh
+tar -xzf data.tar.gz
+cd ..
+
+# Build EmotiEffCppLib
+mkdir build
+cmake -S emotieffcpplib -B build -DWITH_TORCH="$PWD/libtorch" -DWITH_ONNX="$PWD/onnxruntime" -DBUILD_TESTS=ON -DBUILD_SHARED_LIBS=ON
+cmake --build build --config Release -- -j$(nproc)
+
+# Prepare models for EmotiEffCppLib
+python3 models/prepare_models_for_emotieffcpplib.py

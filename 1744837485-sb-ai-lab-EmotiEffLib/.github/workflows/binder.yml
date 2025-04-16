@@ -1,0 +1,16 @@
+name: Build Binder Notebook Container
+
+on:
+  push:
+    branches:
+    - main
+
+jobs:
+  trigger-binder-build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Trigger MyBinder build
+      uses: s-weigand/trigger-mybinder-build@v1
+      continue-on-error: true
+      with:
+        target-repo: sb-ai-lab/EmotiEffLib/${{ github.ref }}

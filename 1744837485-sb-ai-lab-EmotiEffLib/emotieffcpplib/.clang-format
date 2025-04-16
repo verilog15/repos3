@@ -1,0 +1,8 @@
+# More info you can find http://clang.llvm.org/docs/ClangFormat.html
+BasedOnStyle:                                   LLVM
+ColumnLimit:                                    100
+IndentWidth:                                    4
+AccessModifierOffset:                           -4
+DerivePointerAlignment:                         false
+PointerAlignment:                               Left
+Standard:                                       c++20

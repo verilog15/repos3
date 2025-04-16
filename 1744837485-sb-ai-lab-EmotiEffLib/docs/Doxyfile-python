@@ -1,0 +1,121 @@
+#---------------------------------------------------------------------------
+# Project related configuration options
+#---------------------------------------------------------------------------
+DOXYFILE_ENCODING      = UTF-8
+PROJECT_NAME           = "EmotiEffLib"
+PROJECT_NUMBER         = ""
+PROJECT_BRIEF          = "Python implementation of Emotion Efficient Library"
+MARKDOWN_SUPPORT       = YES
+MARKDOWN_ID_STYLE      = DOXYGEN
+PYTHON_DOCSTRING       = YES
+AUTOLINK_SUPPORT       = NO
+BUILTIN_STL_SUPPORT    = YES
+CPP_CLI_SUPPORT        = NO
+
+#---------------------------------------------------------------------------
+# Build related configuration options
+#---------------------------------------------------------------------------
+EXTRACT_ALL            = YES
+EXTRACT_STATIC         = YES
+EXTRACT_LOCAL_CLASSES  = NO
+CASE_SENSE_NAMES       = YES
+SHOW_HEADERFILE        = YES
+SHOW_INCLUDE_FILES     = YES
+SHOW_GROUPED_MEMB_INC  = NO
+SORT_BRIEF_DOCS        = YES
+SORT_MEMBERS_CTORS_1ST = YES
+SHOW_NAMESPACES        = YES
+LAYOUT_FILE            = DoxygenLayout-python.xml
+
+INPUT                  = ../emotiefflib tutorials/python
+INPUT_ENCODING         = UTF-8
+FILE_PATTERNS          =
+RECURSIVE              = YES
+EXCLUDE                = tutorials/python/data
+EXCLUDE_PATTERNS       = */.ipynb_checkpoints/*
+USE_MDFILE_AS_MAINPAGE = ../emotiefflib/README.md
+EXAMPLE_PATH           = tutorials/cpp
+IMPLICIT_DIR_DOCS      = YES
+
+#---------------------------------------------------------------------------
+# Configuration options related to source browsing
+#---------------------------------------------------------------------------
+SOURCE_BROWSER         = YES
+
+# If the VERBATIM_HEADERS tag is set the YES then Doxygen will generate a
+# verbatim copy of the header file for each class for which an include is
+# specified. Set to NO to disable this.
+# See also: Section \class.
+# The default value is: YES.
+
+VERBATIM_HEADERS       = YES
+
+#---------------------------------------------------------------------------
+# Configuration options related to the alphabetical class index
+#---------------------------------------------------------------------------
+ALPHABETICAL_INDEX     = YES
+IGNORE_PREFIX          =
+
+#---------------------------------------------------------------------------
+# Configuration options related to the HTML output
+#---------------------------------------------------------------------------
+GENERATE_HTML          = YES
+HTML_OUTPUT            = html/emotiefflib
+HTML_FILE_EXTENSION    = .html
+HTML_COLORSTYLE        = LIGHT
+GENERATE_TREEVIEW      = NO
+FULL_SIDEBAR           = NO
+TREEVIEW_WIDTH         = 250
+EXT_LINKS_IN_WINDOW    = YES
+OBFUSCATE_EMAILS       = YES
+DISABLE_INDEX          = NO
+
+#---------------------------------------------------------------------------
+# Configuration options related to the LaTeX output
+#---------------------------------------------------------------------------
+GENERATE_LATEX         = NO
+
+#---------------------------------------------------------------------------
+# Configuration options related to the RTF output
+#---------------------------------------------------------------------------
+GENERATE_RTF           = NO
+
+#---------------------------------------------------------------------------
+# Configuration options related to the man page output
+#---------------------------------------------------------------------------
+GENERATE_MAN           = NO
+
+#---------------------------------------------------------------------------
+# Configuration options related to the XML output
+#---------------------------------------------------------------------------
+GENERATE_XML           = NO
+
+#---------------------------------------------------------------------------
+# Configuration options related to the DOCBOOK output
+#---------------------------------------------------------------------------
+GENERATE_DOCBOOK       = NO
+
+#---------------------------------------------------------------------------
+# Configuration options for the AutoGen Definitions output
+#---------------------------------------------------------------------------
+GENERATE_AUTOGEN_DEF   = NO
+
+#---------------------------------------------------------------------------
+# Configuration options related to Sqlite3 output
+#---------------------------------------------------------------------------
+GENERATE_SQLITE3       = NO
+
+#---------------------------------------------------------------------------
+# Configuration options related to the Perl module output
+#---------------------------------------------------------------------------
+GENERATE_PERLMOD       = NO
+
+#---------------------------------------------------------------------------
+# Configuration options related to the preprocessor
+#---------------------------------------------------------------------------
+ENABLE_PREPROCESSING   = YES
+
+#---------------------------------------------------------------------------
+# Configuration options related to diagram generator tools
+#---------------------------------------------------------------------------
+HIDE_UNDOC_RELATIONS   = NO

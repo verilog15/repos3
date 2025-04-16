@@ -1,0 +1,15 @@
+facenet_pytorch
+gdown
+jupyter
+matplotlib
+notebook
+numpy
+onnx
+onnxruntime
+opencv-python
+pillow
+tensorflow
+tf2onnx
+timm==0.9.*
+torch
+torchvision

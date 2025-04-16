@@ -1,0 +1,27 @@
+[tool.black]
+line-length = 100
+target-version = ['py310']
+exclude = '''
+/(
+    .git
+  | .github
+)/
+'''
+
+[tool.isort]
+profile = "black"
+
+[tool.pylint.format]
+max-line-length = 100
+
+[tool.pylint."MESSAGES CONTROL"]
+disable = ["too-many-instance-attributes", "fixme", "too-many-locals"]
+
+[tool.pylint.typecheck]
+# List of members which are set dynamically and missed by pylint inference
+# system, and so shouldn't trigger E1101 when accessed. Python regular
+# expressions are accepted.
+generated-members = ["cv2.*"]
+
+[tool.pylint."BASIC"]
+ignore-paths=["training_and_examples/", "mobile_app/", "emotiefflib/backbones/"]

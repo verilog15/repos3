@@ -1,0 +1,7 @@
+build
+compile_commands.json
+cmake-build-Debug
+cmake-build-Release
+.local_vimrc
+.vimspector.json
+.clangd
