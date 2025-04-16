@@ -1,0 +1,25 @@
+on:
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+-beta.[0-9]+"
+  workflow_dispatch: {}
+
+name: "Beta Tag"
+
+jobs:
+  release:
+    name: "Release"
+
+    uses: ./.github/workflows/part_release.yml
+    with:
+      releaseName: "${{ github.ref_name }}"
+
+  docs:
+    name: "Docs"
+
+    needs: ['release']
+
+    uses: ./.github/workflows/part_docs.yml
+    with:
+      releaseName: "${{ github.ref_name }}"
+
