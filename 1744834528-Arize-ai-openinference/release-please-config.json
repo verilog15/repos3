@@ -1,0 +1,91 @@
+{
+    "bump-patch-for-minor-pre-major": true,
+    "separate-pull-requests": false,
+    "sequential-calls": true,
+    "packages": {
+        "python/openinference-semantic-conventions": {
+            "package-name": "python-openinference-semantic-conventions",
+            "release-type": "python"
+        },
+        "python/openinference-instrumentation": {
+            "package-name": "python-openinference-instrumentation",
+            "release-type": "python"
+        },
+        "python/instrumentation/openinference-instrumentation-mistralai": {
+            "package-name": "python-openinference-instrumentation-mistralai",
+            "release-type": "python"
+        },
+        "python/instrumentation/openinference-instrumentation-openai": {
+            "package-name": "python-openinference-instrumentation-openai",
+            "release-type": "python"
+        },
+        "python/instrumentation/openinference-instrumentation-openai-agents": {
+            "package-name": "python-openinference-instrumentation-openai-agents",
+            "release-type": "python"
+        },
+        "python/instrumentation/openinference-instrumentation-vertexai": {
+            "package-name": "python-openinference-instrumentation-vertexai",
+            "release-type": "python"
+        },
+        "python/instrumentation/openinference-instrumentation-llama-index": {
+            "package-name": "python-openinference-instrumentation-llama-index",
+            "release-type": "python"
+        },
+        "python/instrumentation/openinference-instrumentation-dspy": {
+            "package-name": "python-openinference-instrumentation-dspy",
+            "release-type": "python"
+        },
+        "python/instrumentation/openinference-instrumentation-bedrock": {
+            "package-name": "python-openinference-instrumentation-bedrock",
+            "release-type": "python"
+        },
+        "python/instrumentation/openinference-instrumentation-langchain": {
+            "package-name": "python-openinference-instrumentation-langchain",
+            "release-type": "python"
+        },
+        "python/instrumentation/openinference-instrumentation-guardrails": {
+            "package-name": "python-openinference-instrumentation-guardrails",
+            "release-type": "python"
+        },
+        "python/instrumentation/openinference-instrumentation-crewai": {
+            "package-name": "python-openinference-instrumentation-crewai",
+            "release-type": "python"
+        },
+        "python/instrumentation/openinference-instrumentation-haystack": {
+            "package-name": "python-openinference-instrumentation-haystack",
+            "release-type": "python"
+        },
+        "python/instrumentation/openinference-instrumentation-litellm": {
+            "package-name": "python-openinference-instrumentation-litellm",
+            "release-type": "python"
+        },
+        "python/instrumentation/openinference-instrumentation-groq": {
+            "package-name": "python-openinference-instrumentation-groq",
+            "release-type": "python"
+        },
+        "python/instrumentation/openinference-instrumentation-instructor": {
+            "package-name": "python-openinference-instrumentation-instructor",
+            "release-type": "python"
+        },
+        "python/instrumentation/openinference-instrumentation-anthropic": {
+            "package-name": "python-openinference-instrumentation-anthropic",
+            "release-type": "python"
+        },
+        "python/instrumentation/openinference-instrumentation-smolagents": {
+            "package-name": "python-openinference-instrumentation-smolagents",
+            "release-type": "python"
+        },
+        "python/instrumentation/openinference-instrumentation-autogen": {
+            "package-name": "python-openinference-instrumentation-autogen",
+            "release-type": "python"
+        },
+        "python/instrumentation/openinference-instrumentation-beeai": {
+            "package-name": "python-openinference-instrumentation-beeai",
+            "release-type": "python"
+        },
+        "python/instrumentation/openinference-instrumentation-portkey": {
+            "package-name": "python-openinference-instrumentation-portkey",
+            "release-type": "python"
+        }
+    }
+}
