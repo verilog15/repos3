@@ -1,0 +1,42 @@
+identity_access:
+  name: "Identity & Access"
+  description: "Delivers information on user identities, access controls, and activity."
+  welcome_message: "Hi there! This is your Identity & Access Agent. I can help you with anything related to identity management and access tools. What can I assist you with today? For example, you can ask me things like:"
+  sample_questions:
+    - "Get me the list of users who have access to Azure Subscriptions."
+    - "Get me all SPNs with expired passwords."
+    - "Show me the access activity for user John Doe."
+  availability: "available"
+  prompt_template_file: "gen25-prompt.yaml"
+  query_verification_retries: 5
+  seek_clarification: true
+  domains:
+    - "DevOps"
+    - "Cloud Security"
+    - "Security"
+  sql_schema_files:
+    - "iam.sql"
+  agent_config:
+    primary_model: "Qwen/Qwen2.5-72B-Instruct"
+    primary_provider: "together"
+
+devops:
+  name: "DevOps"
+  description: "Provides data on secure code, deployment, and automation workflows."
+  welcome_message: "Hello! This is your DevOps Agent. I can provide insights into secure code, deployment, and automation workflows. How can I assist you today? For instance, you could ask me:"
+  sample_questions:
+    - "What are the latest secure code scan results?"
+    - "Show me the deployment status for the production environment."
+    - "Provide a report on automated workflow execution times."
+  availability: "available"
+  prompt_template_file: "gen25-prompt.yaml"
+  query_verification_retries: 5
+  seek_clarification: true
+  domains:
+    - "DevOps"
+    - "Security"
+  sql_schema_files:
+    - "github.sql"
+  agent_config:
+    primary_model: "Qwen/Qwen2.5-72B-Instruct"
+    primary_provider: "together"
