@@ -1,0 +1,20 @@
+.DS_Store
+Thumbs.db
+*.log
+
+/.vscode
+/node_modules
+
+/app
+/dist
+/Development.provisionprofile
+
+# yarn
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+supportedVersions.jwt
