@@ -1,0 +1,49 @@
+# Calibre E-Book Library
+# WARNING: CALIBRE INSTALLS GRAPHICAL LIBRARIES SIMILAR TO X WINDOWS & OPENGL
+# ON (HEADLESS, SERVER, LITE) OS'S THAT DON'T ALREADY HAVE THESE INSTALLED.
+
+# calibre_install: False
+# calibre_enabled: False
+
+# vars/raspbian-9.yml tries the .deb upgrade of Calibre, overriding this default:
+# calibre_via_debs: False
+# calibre_unstable_debs: False
+
+# vars/<most-OS's>.yml use Calibre's python installer/upgrader (x86_64), overriding this default:
+# calibre_via_python: False
+
+# Change calibre_port to 8010 if you're using XO laptops needing above idmgr ?
+# calibre_port: 8080
+
+# http://box:8080 & http://box:8080/mobile WORK FOR NOW, but short/mnemonic
+# URL's like http://box/calibre DON'T YET WORK -- BOOKS RARELY DISPLAY:
+# calibre_web_path: calibre    # NEEDS WORK: https://github.com/iiab/iiab/issues/529
+# Avoid URL collisions w/ calibreweb_url1, calibreweb_url2, calibreweb_url3 below!
+
+# All above are set in: github.com/iiab/iiab/blob/master/vars/default_vars.yml
+# If nec, change them by editing /etc/iiab/local_vars.yml prior to installing!
+
+calibre_dbpath: "{{ content_base }}/calibre"
+# i.e. /library/calibre (holds metadata.db + book directories + our users.sqlite)
+
+calibre_userdb: "{{ calibre_dbpath }}/users.sqlite"
+# i.e. /library/calibre/users.sqlite since github.com/iiab/iiab/issues/830
+# Teachers add/remove/convert books & edit metadata using: Admin/changeme
+# Stub/Student acnts to browse: box/box, h/h, ht/ht, m/m, mx/mx, p/p, pe/pe
+# Edit accounts/permissions using:
+#   calibre-server --manage-users --userdb /library/calibre/users.sqlite
+
+calibre_sample_book: "Metamorphosis-jackson.epub"
+# Must be downloadable from https://download.iiab.io/packages
+
+calibre_src_url: "https://raw.githubusercontent.com/kovidgoyal/calibre/master/setup/linux-installer.py"
+
+calibre_deb_url: "{{ iiab_download_url }}"    # https://download.iiab.io/packages
+# Above URL must offer both .deb files below: (for scripts/calibre-install-pinned-rpi.sh to run)
+calibre_deb_pin_version: 3.33.1+dfsg-1    # for calibre_3.33.1+dfsg-1_all.deb (24M, 2018-10-21)
+calibre_bin_deb_pin_version: "{{ calibre_deb_pin_version }}"    # for calibre-bin_3.33.1+dfsg-1_armhf.deb (706K, 2018-10-23)
+
+# USE TO TEST debs.yml (RASPBIAN APPROACH!) ON DEBIAN 9.X: (now handled by calibre_via_debs in each /opt/iiab/iiab/vars/<OS>.yml)
+#calibre_debs_on_debian: True
+# Enable unstable .deb's, not just testing .deb's: (moved to /etc/iiab/local_vars.yml & /opt/iiab/iiab/vars/default_vars.yml)
+#calibre_unstable_debs: False

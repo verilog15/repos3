@@ -1,0 +1,32 @@
+# mediawiki_install: False
+# mediawiki_enabled: False
+
+# All above are set in: github.com/iiab/iiab/blob/master/vars/default_vars.yml
+# If nec, change them by editing /etc/iiab/local_vars.yml prior to installing!
+
+mediawiki_major_version: "1.43"    # "1.40" quotes nec if trailing zero
+mediawiki_minor_version: 1
+mediawiki_version: "{{ mediawiki_major_version }}.{{ mediawiki_minor_version }}"
+
+mediawiki_download_base_url: "https://releases.wikimedia.org/mediawiki/{{ mediawiki_major_version }}"
+mediawiki_src: "mediawiki-{{ mediawiki_version }}.tar.gz"
+
+mediawiki_db_name: iiab_mediawiki
+mediawiki_db_user: iiab_mediawiki_user
+mediawiki_db_user_password: changeme2020
+
+mediawiki_admin_user: Admin
+mediawiki_admin_user_password: changeme2020
+# 2020-01-17: MediaWiki 1.34.0 NO LONGER ACCEPTS 'changeme' as a password.
+# 2019-09-30: http://box/mediawiki asked for a stronger password on login, per:
+# https://www.mediawiki.org/wiki/Wikimedia_Security_Team/Password_strengthening_2019#Password_requirements
+
+mediawiki_site_name: Community Wiki
+
+mediawiki_install_path: "{{ content_base }}"    # /library
+mediawiki_abs_path: "{{ mediawiki_install_path }}/mediawiki-{{ mediawiki_version }}"
+
+mediawiki_url: /wiki
+mediawiki_url2: /mediawiki
+mediawiki_full_url: "http://{{ iiab_hostname }}.{{ iiab_domain }}{{ mediawiki_url }}"    # http://box.lan/wiki
+mediawiki_symlink: w    # Can also be mwlink. NO slashes as they are supplied as needed in the code

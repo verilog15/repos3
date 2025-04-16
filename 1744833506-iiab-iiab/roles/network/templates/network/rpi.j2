@@ -1,0 +1,20 @@
+# iiab_network_mode is {{ iiab_network_mode  }}
+{% if gui_desired_network_role is defined %}
+# gui_desired_network_role is {{ gui_desired_network_role }}
+{% endif %}
+{% if iiab_network_mode != "Appliance"  %}
+# auto wired slave creation is suppressed in detected_network.yml
+# 'none' would become the name of the wired slave device.
+#################   LANCONTROLLER   ###################
+auto br0
+iface br0 inet manual
+{% if iiab_wired_lan_iface is defined %}
+    bridge_ports {{ iiab_wired_lan_iface }}
+{% else %}
+    bridge_ports none
+{% endif %}
+    bridge_maxwait 0
+    dns-nameservers 127.0.0.1
+    dns-search {{ iiab_domain }}
+{% endif %}
+{# end LANCONTROLLER #}

@@ -1,0 +1,22 @@
+[Unit]
+Description=Node.js Sugarizer Server
+# Forces mongodb to start up if not started
+Requires=mongodb.service
+# Wait for mongodb service to run first
+After=mongodb.service
+
+[Service]
+WorkingDirectory=/opt/iiab/sugarizer-server/
+ExecStart=/usr/bin/node /opt/iiab/sugarizer-server/sugarizer.js
+Type=simple
+Restart=always
+RestartSec=10
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=sugarizer
+#User=<alternate user>
+#Group=<alternate group>
+#Environment=NODE_ENV=production
+
+[Install]
+WantedBy=multi-user.target

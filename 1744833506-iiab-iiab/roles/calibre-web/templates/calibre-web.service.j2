@@ -1,0 +1,10 @@
+[Unit]
+Description=Calibre-Web
+
+[Service]
+Type=simple
+User={{ calibreweb_user }}
+ExecStart={{ calibreweb_venv_path }}/bin/python3 {{ calibreweb_exec_path }} -p {{ calibreweb_config }}/{{ calibreweb_settings_database }}
+
+[Install]
+WantedBy=multi-user.target

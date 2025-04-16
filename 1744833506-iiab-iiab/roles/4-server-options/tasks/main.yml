@@ -1,0 +1,58 @@
+# Server Options
+
+- name: ...IS BEGINNING ==================================
+  stat:
+    path: "{{ iiab_state_file }}"    # /etc/iiab/iiab_state.yml
+  register: iiab_state_file_check
+
+# 2020-09-21: Why is checking for iiab_state.yml in Stage 4 out of curiosity?
+# Possibly move this to Stage 0?  Either way...this is a STRICT CHECK in case
+# {iiab-stages.yml, run-one-role.yml, etc} omit the file from "vars_files:"
+
+- name: ENFORCE precondition that {{ iiab_state_file }} MUST exist
+  assert:
+    that: iiab_state_file_check.stat.exists
+
+- name: Install pylibs (IIAB's python libs)
+  include_role:
+    name: pylibs
+  #when: pylibs_installed is undefined
+  #when: pylibs_install    # Flag might be created in future?
+
+- name: Install Bluetooth - only on Raspberry Pi
+  include_role:
+    name: bluetooth
+  when: bluetooth_install and rpi_model != "none"
+
+- name: USB_LIB
+  include_role:
+    name: usb_lib
+  when: usb_lib_install
+
+- name: CUPS
+  include_role:
+    name: cups
+  when: cups_install
+
+- name: SAMBA
+  include_role:
+    name: samba
+  when: samba_install
+
+# 2020-02-17: What was roles/homepage lives in roles/www_options
+# 2020-10-08: Softcoded iiab_home_url should work (e.g. using local_vars.yml or
+# Admin Console) for more field options, e.g. changing /library/www/html/home
+# to WordPress or Moodle even when offline?  @tim-moody cautions that this is
+# untested for several years, so let's keep an eye on it!  iiab/iiab#2560
+
+- name: WWW_OPTIONS (WWW_BASE should have been installed earlier)
+  include_role:
+    name: www_options
+  #when: www_options_installed is undefined    # NO: as we encourage frequent settings changes here, e.g. php.ini and many others!
+
+
+- name: Recording STAGE 4 HAS COMPLETED ==================
+  lineinfile:
+    path: "{{ iiab_env_file }}"
+    regexp: '^STAGE=*'
+    line: 'STAGE=4'

@@ -1,0 +1,25 @@
+- name: Teamviewer exclude ARM and debian family
+  set_fact:
+    teamviewer_install: False
+    teamviewer_enabled: "unavailable"
+  when: ansible_architecture == "armv7l" or not is_redhat
+
+- name: Install Teamviewer if intel
+  include_tasks: install.yml
+  when: teamviewer_install
+
+- name: Add 'teamviewer' variable values to {{ iiab_ini_file }}
+  ini_file:
+    path: "{{ iiab_ini_file }}"
+    section: teamviewer
+    option: "{{ item.option }}"
+    value: "{{ item.value | string }}"
+  with_items:
+    - option: name
+      value: teamviewer
+    - option: description
+      value: '"TeamViewer - the All-In-One Software for Remote Support and Online Meetings"'
+    - option: teamviewer_install
+      value: "{{ teamviewer_install }}"
+    - option: teamviewer_enabled
+      value: "{{ teamviewer_enabled }}"

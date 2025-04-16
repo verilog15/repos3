@@ -1,0 +1,129 @@
+# Initialize
+
+- name: ...IS BEGINNING ============================================
+  stat:
+    path: "{{ iiab_ini_file }}"    # /etc/iiab/iiab.ini
+  register: iiab_ini_test
+
+# Higher-level purpose explained at the bottom of:
+# https://github.com/iiab/iiab/blob/master/vars/default_vars.yml
+- name: "Ansible just ran /etc/ansible/facts.d/local_facts.fact to set 15 vars -- here we extract 6 of those -- iiab_stage: {{ ansible_local.local_facts.stage }}, rpi_model: {{ ansible_local.local_facts.rpi_model }}, devicetree_model: {{ ansible_local.local_facts.devicetree_model }}, os_ver: {{ ansible_local.local_facts.os_ver }}, python_version: {{ ansible_local.local_facts.python_version }}, php_version: {{ ansible_local.local_facts.php_version }}"
+  set_fact:
+    iiab_stage: "{{ ansible_local.local_facts.stage }}"
+    rpi_model: "{{ ansible_local.local_facts.rpi_model }}"
+    devicetree_model: "{{ ansible_local.local_facts.devicetree_model }}"
+    os_ver: "{{ ansible_local.local_facts.os_ver }}"
+    python_version: "{{ ansible_local.local_facts.python_version }}"
+    php_version: "{{ ansible_local.local_facts.php_version }}"
+
+# Initialize /etc/iiab/iiab.ini writing the 'location' and 'version' sections
+# once and only once, to preserve the install date and git hash.
+- name: Create {{ iiab_ini_file }}, if it doesn't exist
+  include_tasks: create_iiab_ini.yml
+  when: not iiab_ini_test.stat.exists
+
+# 2021-07-30: The 'first_run' flag isn't much used anymore.  In theory it's
+# still used in 1-prep/tasks/hardware.yml for raspberry_pi.yml
+#
+# This needs to be reworked for 0-init speed, and overall understandability.
+- name: Set first_run flag
+  set_fact:
+    first_run: True
+  when: not iiab_ini_test.stat.exists
+
+
+# Copies the latest/known version of iiab-diagnostics into /usr/bin (so it can
+# be run even if local source tree /opt/iiab/iiab is deleted to conserve disk).
+- name: Copy iiab-update & iiab-summary & iiab-diagnostics & iiab-root-login from /opt/iiab/iiab/scripts/ to /usr/bin/
+  copy:
+    src: "{{ iiab_dir }}/scripts/{{ item }}"
+    dest: /usr/bin/
+    mode: '0755'
+  with_items:
+    - iiab-update
+    - iiab-summary
+    - iiab-diagnostics
+    - iiab-root-login
+
+- name: Symlink /usr/bin/iiab-upgrade -> /usr/bin/iiab-update
+  file:
+    src: /usr/bin/iiab-update
+    path: /usr/bin/iiab-upgrade
+    state: link
+    #force: yes
+
+
+- name: Pre-check that IIAB's "XYZ_install" + "XYZ_enabled" vars (1) are defined, (2) are boolean-not-string variables, and (3) contain plausible values.  Also checks that "XYZ_install" is True when "XYZ_installed" is defined.
+  include_tasks: validate_vars.yml
+  when: not (rpi_model | regex_search('\\bW\\b'))    # Ansible require double backslashes, e.g. with \b "word boundary" anchors: https://www.regular-expressions.info/wordboundaries.html https://stackoverflow.com/questions/56869119/ansible-regular-expression-to-match-a-string-and-extract-the-line/56869801#56869801
+
+# 2022-12-30: Functionality moved to www_options/tasks/php-settings.yml
+# - name: "Time Zone / TZ: Set symlink /etc/localtime to UTC if it doesn't exist?"
+#   include_tasks: tz.yml
+
+- name: Set hostname / domain (etc) in various places
+  include_tasks: hostname.yml
+
+- name: Add 'runtime' variable values to {{ iiab_ini_file }}
+  ini_file:
+    path: "{{ iiab_ini_file }}"    # /etc/iiab/iiab.ini
+    section: runtime
+    option: "{{ item.option }}"
+    value: "{{ item.value | string }}"
+  with_items:
+    - option: iiab_stage
+      value: "{{ iiab_stage }}"
+    - option: iiab_base_ver
+      value: "{{ iiab_base_ver }}"
+    - option: iiab_revision
+      value: "{{ iiab_revision }}"
+    - option: iiab_remote_url
+      value: "{{ ansible_local.local_facts.iiab_remote_url }}"
+    - option: runtime_branch
+      value: "{{ ansible_local.local_facts.iiab_branch }}"
+    - option: runtime_commit
+      value: "{{ ansible_local.local_facts.iiab_commit }}"
+    - option: iiab_recent_tag
+      value: "{{ ansible_local.local_facts.iiab_recent_tag }}"
+    - option: runtime_date
+      value: "{{ ansible_date_time.iso8601 }}"
+    - option: ansible_version
+      value: "{{ ansible_local.local_facts.ansible_version }}"
+    - option: kernel
+      value: "{{ ansible_kernel }}"
+    - option: memory_mb
+      value: "{{ ansible_memtotal_mb }}"
+    - option: swap_mb
+      value: "{{ ansible_swaptotal_mb }}"
+    - option: rpi_model
+      value: "{{ rpi_model }}"
+    - option: devicetree_model
+      value: "{{ devicetree_model }}"
+    - option: os_ver
+      value: "{{ os_ver }}"
+    - option: python_version
+      value: "{{ python_version }}"
+    - option: php_version
+      value: "{{ php_version }}"
+    - option: first_run
+      value: "{{ first_run }}"
+    # - option: local_tz    # e.g. 'EDT' (summer) or 'EST' (winter) after Ansible interprets symlink /etc/localtime -- or 'UTC' if /etc/localtime doesn't exist
+    #   value: "{{ local_tz }}"
+    # - option: etc_localtime.stdout    # e.g. 'America/New_York' direct from symlink /etc/localtime -- or '' if /etc/localtime doesn't exist
+    #   value: "{{ etc_localtime.stdout }}"
+    - option: FQDN_changed
+      value: "{{ FQDN_changed }}"
+
+- name: Add 'runtime' variable 'is_VM' value if defined, to {{ iiab_ini_file }}
+  ini_file:
+    path: "{{ iiab_ini_file }}"    # /etc/iiab/iiab.ini
+    section: runtime
+    option: "{{ item.option }}"
+    value: "{{ item.value | string }}"
+  with_items:
+    - option: is_VM
+      value: "yes"
+  when: is_VM is defined
+
+- name: STAGE 0 HAS COMPLETED ======================================
+  meta: noop    # Or use "command: echo" to force instantiation of vars e.g. "name: {{ var }}"

@@ -1,0 +1,18 @@
+# SEE https://github.com/iiab/iiab/blob/master/roles/kolibri/templates/kolibri.conf.j2
+
+# 2018-08-31: FAILS to enable http://box/kiwix
+#RewriteEngine on
+#RewriteRule ^{{ kiwix_url }}$ {{ kiwix_url_plus_slash }} [R]
+
+# 2018-08-31: SUCCEEDS in enabling http://box/kiwix
+RedirectMatch ^{{ kiwix_url }}$ {{ kiwix_url_plus_slash }}
+
+# 2018-08-31: SUCCEEDS in enabling http://box/kiwix/ & http://box/kiwix/zim & http://box/kiwix/zim/
+#ProxyPreserveHost On
+ProxyPass {{ kiwix_url }} http://127.0.0.1:{{ kiwix_port}}{{ kiwix_url_plus_slash }}
+
+# CLARIF: ProxyPassReverse rewrites internal links, that come back from Apache
+# proxy.  Whereas e.g. calibre-web.conf (and others) use this, kiwix.conf does
+# not, as kiwix itself prefixes URLs thanks to --urlRootLocation=/kiwix/ in
+# kiwix's systemd file arising from roles/kiwix/templates/kiwix-serve.service.j2
+#ProxyPassReverse {{ kiwix_url }} http://127.0.0.1:{{ kiwix_port}}{{ kiwix_url }}

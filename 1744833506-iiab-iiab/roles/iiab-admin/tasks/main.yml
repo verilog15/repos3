@@ -1,0 +1,81 @@
+# Summary of how this works with IIAB's Admin Console etc:
+# https://github.com/iiab/iiab/blob/master/roles/iiab-admin/README.rst
+
+
+- name: Record (initial) disk space used
+  shell: df -B1 --output=used / | tail -1
+  register: df1
+
+
+- name: "Install text-mode packages, useful during remote access: lynx, screen"
+  package:
+    name:
+      - lynx
+      - screen
+    state: present
+
+- name: Install sudo & /etc/sudoers with logging to /var/log/sudo.log
+  include_tasks: sudo-prereqs.yml
+
+- name: Configure user iiab-admin / password and its group(s), if iiab_admin_user_install
+  include_tasks: admin-user.yml
+  when: iiab_admin_user_install
+
+# Idea: institute precautionary system-wide published password warning(s)
+# for user iiab-admin / g0adm1n, i.e. {{ iiab_admin_user }} with password
+# {{ iiab_admin_published_pwd }}, regardless whether the password is set:
+#
+# (1) by the OS installer
+# (2) by the OS's graphical desktop tools
+# (3) at the command-line: sudo passwd iiab-admin
+# (4) by IIAB's 1-line installer: https://download.iiab.io
+# (5) by this role: roles/iiab-admin/tasks/admin-user.yml
+# (6) by IIAB's Admin Console during installation
+# ...and/or...
+# (7) by IIAB's Admin Console > Utilities > Change Password
+
+- name: Install password warning(s)
+  include_tasks: pwd-warnings.yml
+
+
+# RECORD iiab-admin AS INSTALLED
+
+- name: Record (final) disk space used
+  shell: df -B1 --output=used / | tail -1
+  register: df2
+
+- name: Add 'iiab_admin_disk_usage = {{ df2.stdout|int - df1.stdout|int }}' to {{ iiab_ini_file }}
+  ini_file:
+    path: "{{ iiab_ini_file }}"    # /etc/iiab/iiab.ini
+    section: iiab-admin
+    option: iiab_admin_disk_usage
+    value: "{{ df2.stdout|int - df1.stdout|int }}"
+
+- name: "Set 'iiab_admin_installed: True'"
+  set_fact:
+    iiab_admin_installed: True
+
+- name: "Add 'iiab_admin_installed: True' to {{ iiab_state_file }}"
+  lineinfile:
+    path: "{{ iiab_state_file }}"    # /etc/iiab/iiab_state.yml
+    regexp: '^iiab_admin_installed'
+    line: 'iiab_admin_installed: True'
+
+
+- name: Add 'iiab-admin' variable values to {{ iiab_ini_file }}
+  ini_file:
+    dest: "{{ iiab_ini_file }}"    # /etc/iiab/iiab.ini
+    section: iiab-admin
+    option: "{{ item.option }}"
+    value: "{{ item.value | string }}"
+  with_items:
+    - option: name
+      value: iiab-admin
+    - option: description
+      value: '"Admin User"'
+    - option: iiab_admin_user
+      value: "{{ iiab_admin_user }}"
+    - option: iiab_admin_user_install
+      value: "{{ iiab_admin_user_install }}"
+    - option: iiab_admin_can_sudo
+      value: "{{ iiab_admin_can_sudo }}"

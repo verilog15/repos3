@@ -1,0 +1,39 @@
+# Calibre-Web alternative to Calibre, offers a clean/modern UX
+
+# calibreweb_install: False
+# calibreweb_enabled: False
+
+# calibreweb_port: 8083       # PORT VARIABLE HAS NO EFFECT (as of January 2019)
+
+# calibreweb_url1: /books     # For SHORT URL http://box/books  (English)
+# calibreweb_url2: /libros    # For SHORT URL http://box/libros (Spanish)
+# calibreweb_url3: /livres    # For SHORT URL http://box/livres (French)
+
+# calibreweb_home: "{{ content_base }}/calibre-web"    # /library/calibre-web for books, metadata.db & config/app.db
+
+# All above are set in: github.com/iiab/iiab/blob/master/vars/default_vars.yml
+# If nec, change them by editing /etc/iiab/local_vars.yml prior to installing!
+
+calibreweb_repo_url: https://github.com/iiab/calibre-web    # Or use upstream: https://github.com/janeczku/calibre-web
+calibreweb_version: master    # WAS: master, 0.6.4, 0.6.5, 0.6.6, 0.6.7, 0.6.8, 0.6.9
+
+calibreweb_venv_wipe: False    # 2023-12-04: NEW default TDD (Test-Driven Dev!)
+calibreweb_venv_path: /usr/local/calibre-web-py3
+calibreweb_exec_path: "{{ calibreweb_venv_path }}/cps.py"
+
+# Config files (in reality just app.db) put in:
+calibreweb_config: "{{ calibreweb_home }}/config"
+
+# 2022-03-07: Calibre-Web will be reset to default settings if (re)installed
+# when /library/calibre-web/config/app.db doesn't exist:
+calibreweb_settings_database: app.db    # /library/calibre-web/config/app.db
+
+# UNUSED var as of 2022-03-07:
+# calibreweb_database: metadata.db    # /library/calibre-web/metadata.db
+
+# Files owned by:
+calibreweb_user: root
+
+# UNUSED vars, as of March 2019:
+# calibreweb_admin_user: Admin
+# calibreweb_admin_password: changeme

@@ -1,0 +1,86 @@
+# TO DO: (2020-02-13)
+# - Look at analogous NGINX logic for http://box/usb in
+#   nginx/templates/iiab.conf.j2 and make that visually meaningful for teachers:
+# https://github.com/iiab/iiab/blob/master/roles/nginx/templates/iiab.conf.j2#L5-L9
+
+
+# "How do i fail a task in Ansible if the variable contains a boolean value?
+# I want to perform input validation for Ansible playbooks"
+# https://stackoverflow.com/questions/46664127/how-do-i-fail-a-task-in-ansible-if-the-variable-contains-a-boolean-value-i-want/46667499#46667499
+
+# We assume 0-init/tasks/validate_vars.yml has DEFINITELY been run, so no need
+# to re-check whether vars are defined here.  As Ansible vars cannot be unset:
+# https://serverfault.com/questions/856729/how-to-destroy-delete-unset-a-variable-value-in-ansible
+
+- name: Assert that "usb_lib_install is sameas true" (boolean not string etc)
+  assert:
+    that: usb_lib_install is sameas true
+    fail_msg: "PLEASE SET 'usb_lib_install: True' e.g. IN: /etc/iiab/local_vars.yml"
+    quiet: yes
+
+- name: Assert that "usb_lib_enabled | type_debug == 'bool'" (boolean not string etc)
+  assert:
+    that: usb_lib_enabled | type_debug == 'bool'
+    fail_msg: "PLEASE GIVE VARIABLE 'usb_lib_enabled' A PROPER (UNQUOTED) ANSIBLE BOOLEAN VALUE e.g. IN: /etc/iiab/local_vars.yml"
+    quiet: yes
+
+
+- name: Install USB_LIB if 'usb_lib_installed' not defined, e.g. in {{ iiab_state_file }}    # /etc/iiab/iiab_state.yml
+  include_tasks: install.yml
+  when: usb_lib_installed is undefined
+
+
+# If setup.yml becomes the norm in future, put the 2-3 stanzas below in there:
+
+- name: "Set 'umask=0000' for {VFAT/FAT32, NTFS, exFAT} using var FS_MOUNTOPTIONS in /etc/usbmount/usbmount.conf -- for Kolibri exports AND student uploads to teacher's USB stick (using http://box/usb)"
+  lineinfile:
+    regexp: '^FS_MOUNTOPTIONS=.*'
+    line: 'FS_MOUNTOPTIONS="-fstype=vfat,umask=0000 -fstype=ntfs,umask=0000 -fstype=exfat,umask=0000"'
+    path: /etc/usbmount/usbmount.conf
+  when: usb_lib_writable_sticks
+
+# Setting 'umask=0000' for all filesystems: (much the same thing as above, as
+# the mount command does not use this umask setting for filesystems like ext4)
+#- name: "Add ',umask=0000' to MOUNTOPTIONS var in /etc/usbmount/usbmount.conf, so Kolibri exports work"
+#  lineinfile:
+#    regexp: '^MOUNTOPTIONS=.*'
+#    line: 'MOUNTOPTIONS="sync,noexec,nodev,noatime,nodiratime,umask=0000"'
+#    path: /etc/usbmount/usbmount.conf
+#  when: usb_lib_writable_sticks
+
+- name: 'Set FS_MOUNTOPTIONS="" in /etc/usbmount/usbmount.conf -- e.g. if Kolibri exports AND student uploads to teacher USB stick are not needed'
+  lineinfile:
+    regexp: '^FS_MOUNTOPTIONS=.*'
+    line: 'FS_MOUNTOPTIONS=""'    # Restore apt pkg default, e.g. for runrole
+    path: /etc/usbmount/usbmount.conf
+  when: not usb_lib_writable_sticks
+
+
+- name: Enable/Disable/Restart NGINX
+  include_tasks: nginx.yml
+
+
+# 2021-04-29: Clean up here to catch the already installed users, remove for the next release (PR #2760)
+- name: Remove /etc/usbmount/mount.d/00_create_model_symlink
+  file:
+    path: /etc/usbmount/mount.d/00_create_model_symlink
+    state: absent
+
+
+- name: Add 'usb_lib' variable values to {{ iiab_ini_file }}
+  ini_file:
+    path: "{{ iiab_ini_file }}"    # /etc/iiab/iiab.ini
+    section: usb_lib
+    option: "{{ item.option }}"
+    value: "{{ item.value | string }}"
+  with_items:
+    - option: name
+      value: USB_LIB
+    - option: description
+      value: '"USB_LIB (1) automounts teacher content on USB sticks to /library/www/html/local_content, so students can browse the USB; AND (2) allows students to upload their work to USB sticks / drives, all from http://box/usb"'
+    - option: usb_lib_install
+      value: "{{ usb_lib_install }}"
+    - option: usb_lib_enabled
+      value: "{{ usb_lib_enabled }}"
+    - option: usb_lib_writable_sticks
+      value: "{{ usb_lib_writable_sticks }}"

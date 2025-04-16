@@ -1,0 +1,69 @@
+- name: Install package libmicrohttpd12 (Nodogsplash dependencies)
+  package:
+    name: libmicrohttpd12
+    state: present
+
+- name: Download {{ iiab_download_url }}/{{ nodogsplash_arm_deb }} to {{ downloads_dir }}
+  get_url:
+     url: "{{ iiab_download_url }}/{{ nodogsplash_arm_deb }}"
+     dest: "{{ downloads_dir }}/{{ nodogsplash_arm_deb }}"
+     timeout: "{{ download_timeout }}"
+  when: internet_available
+  #async: 300
+  #poll: 5
+
+- name: Install Nodogsplash
+  apt:
+    deb: "{{ downloads_dir }}/{{ nodogsplash_arm_deb }}"
+
+#- name: Create nodogsplash.service # deb file has one
+#  template:
+#    backup: no
+#    src: nodogsplash.service.j2
+#    dest: "/etc/systemd/system/nodogsplash.service"
+#    owner: root
+#    group: root
+#    mode: 0644
+
+- name: Install custom /etc/nodogsplash/nodogsplash.conf, /etc/nodogsplash/htdocs/splash.html
+  template:
+    backup: no
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: root
+    group: root
+    mode: "{{ item.mode }}"
+  with_items:
+    - { src: 'nodogsplash.conf.j2', dest: '/etc/nodogsplash/nodogsplash.conf', mode: '0644'}
+    - { src: 'splash.html.j2', dest: '/etc/nodogsplash/htdocs/splash.html', mode: '0644'}
+
+# We should probably only start this service on next boot
+- name: Enable & Start 'nodogsplash' systemd service, if nodogsplash_enabled
+  systemd:
+    name: nodogsplash
+    enabled: yes
+    state: started
+  when: nodogsplash_enabled
+
+- name: Disable 'nodogsplash' systemd service, if not nodogsplash_enabled
+  systemd:
+    name: nodogsplash
+    enabled: no
+    state: stopped
+  when: not nodogsplash_enabled
+
+- name: Add 'nodogsplash' variable values to {{ iiab_ini_file }}
+  ini_file:
+    path: "{{ iiab_ini_file }}"
+    section: nodogsplash
+    option: "{{ item.option }}"
+    value: "{{ item.value | string }}"
+  with_items:
+    - option: name
+      value: nodogsplash
+    - option: description
+      value: '"Nodogsplash is a lightweight Captive Portal."'
+    - option: source
+      value: "{{ nodogsplash_arm_deb }}"
+    - option: enabled
+      value: "{{ nodogsplash_enabled }}"

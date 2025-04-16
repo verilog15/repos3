@@ -1,0 +1,228 @@
+- name: "Set PostgreSQL vars 'postgresql_install: True' and 'postgresql_enabled: True'"
+  set_fact:
+    postgresql_install: True
+    postgresql_enabled: True
+
+- name: POSTGRESQL - run 'postgresql' role
+  include_role:
+    name: postgresql
+
+- name: Remove package Pathagar (in case rpm?)
+  package:
+    name: pathagar
+    state: absent
+
+- name: "Install Pathagar prerequisites: python-virtualenv, python-pip, python-psycopg2"
+  package:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - python-virtualenv
+    - python-pip
+    - python-psycopg2
+
+- name: "Install Pathagar prerequisites: libapache2-mod-wsgi, libxml2-dev, libxslt-dev (debuntu)"
+  package:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - libapache2-mod-wsgi
+    - libxml2-dev
+    - libxslt-dev
+  when: is_debuntu
+
+- name: "Install Pathagar prerequisites: mod_wsgi, libxml2-devel, libxslt-devel (not debuntu)"
+  package:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - mod_wsgi
+    - libxml2-devel
+    - libxslt-devel
+  when: not is_debuntu
+
+- name: "Create destination folder: {{ pathagar_src }}"
+  file:
+    path: "{{ pathagar_src }}"
+    state: directory
+    # owner: root
+    # group: root
+    # mode: '0755'
+
+- name: "Create books destination folder: {{ pathagar_media }}"
+  file:
+    path: "{{ pathagar_media }}"
+    state: directory
+    owner: "{{ apache_user }}"
+    group: "{{ apache_user }}"
+    mode: '0755'
+
+- name: Determine if Pathagar has already been downloaded from git
+  stat:
+    path: "{{ pathagar_src }}/settings.py"
+  register: pathagar
+
+- name: Clone Pathagar repo
+  git:
+    repo: https://github.com/PathagarBooks/pathagar.git
+    dest: "{{ pathagar_src }}"
+    update: yes
+    version: master
+  when: internet_available and pathagar.stat.exists is defined and not pathagar.stat.exists
+
+- name: Install Pathagar requirements in a virtualenv
+  pip:
+    name: "{{ item }}"
+  with_items:
+    - Django==1.4.5
+    - django-tagging==0.3.1
+    - django-sendfile==0.3.6
+    - lxml==3.4.4
+  when: internet_available
+
+- name: Install Pathagar requirements in a virtualenv
+  pip:
+    name: "{{ item }}"
+    extra_args: "--use-wheel"
+    virtualenv: "{{ pathagar_venv }}"
+    virtualenv_site_packages: yes
+  with_items:
+    - django-taggit==0.14
+
+- name: Create Pathagar postgresql user
+  postgresql_user:
+    name: "{{ pathagar_db_user }}"
+    password: "{{ pathagar_db_password }}"
+    role_attr_flags: NOSUPERUSER,NOCREATEROLE,NOCREATEDB
+    state: present
+  become: yes
+  become_user: postgres
+
+- name: Start 'postgresql-iiab' systemd service
+  systemd:
+    name: postgresql-iiab
+    state: started
+    enabled: yes
+ when: pathagar_enabled
+
+- name: Enable Pathagar postgresql user access by md5 method
+  lineinfile:
+    backup: yes
+    dest: /library/pgsql-iiab/pg_hba.conf
+    regexp: '^host\s+pathagar'
+    line: "host    pathagar        pathagar     samehost     md5"
+    state: present
+    insertafter: "^# IPv4 local connections"
+    owner: postgres
+    group: postgres
+  register: enable_pathagar_md5_access
+
+- name: Reload 'postgresql-iiab' systemd service
+  systemd:
+    name: postgresql-iiab
+    state: reloaded
+  when: enable_pathagar_md5_access.changed
+
+- name: Create Pathagar postgresql database
+  postgresql_db:
+    name: "{{ pathagar_db_name }}"
+    encoding: utf8
+    owner: "{{ pathagar_db_user }}"
+    state: present
+    template: template0
+  become: yes
+  become_user: postgres
+
+- name: Install IIAB custom settings for Pathagar
+  template:
+    src: prod_settings.py
+    dest: "{{ pathagar_src }}/prod_settings.py"
+    # owner: root
+    # group: root
+    # mode: '0644'
+
+- name: Create Pathagar initial db
+  django_manage:
+    app_path: "{{ pathagar_src }}"
+    command: syncdb
+    virtualenv: "{{ pathagar_venv }}"
+    settings: pathagar.prod_settings
+
+- name: Upload Pathagar admin user
+  template:
+    src: auth.User.json
+    dest: "{{ pathagar_dir }}/auth.User.json"
+    owner: root
+    group: root
+    mode: '0600'
+
+- name: Load Pathagar admin user
+  django_manage:
+    app_path: "{{ pathagar_src }}"
+    command: loaddata
+    virtualenv: "{{ pathagar_venv }}"
+    settings: pathagar.prod_settings
+    fixtures: "{{ pathagar_dir }}/auth.User.json"
+
+- name: Collect Pathagar static files
+  django_manage:
+    app_path: "{{ pathagar_src }}"
+    command: collectstatic
+    virtualenv: "{{ pathagar_venv }}"
+    settings: pathagar.prod_settings
+
+- name: Install wsgi.py for Pathagar
+  template:
+    src: wsgi.py
+    dest: "{{ pathagar_dir }}/wsgi.py"
+    # owner: root
+    # group: root
+    # mode: '0644'
+
+- name: Install /etc/{{ apache_conf_dir }}/pathagar.conf from template
+  template:
+    src: pathagar.conf
+    backup: yes
+    dest: "/etc/{{ apache_conf_dir }}/pathagar.conf"
+    mode: 0644
+
+- name: Enable Pathagar via Apache (debuntu)
+  file:
+    path: /etc/apache2/sites-enabled/pathagar.conf
+    src: /etc/apache2/sites-available/pathagar.conf
+    state: link
+  when: pathagar_enabled and is_debuntu
+
+- name: Disable Pathagar via Apache (debuntu)
+  file:
+    path: /etc/apache2/sites-enabled/pathagar.conf
+    state: absent
+  when: not pathagar_enabled and is_debuntu
+
+- name: Reload '{{ apache_service }}' systemd service
+  systemd:
+    name: "{{ apache_service }}"
+    state: reloaded
+
+# if the only service using the backend db disable if not running
+- name: Disable 'postgresql-iiab' systemd service, if not moodle_enabled and not pathagar_enabled
+  systemd:
+    name: postgresql-iiab
+    state: stopped
+    enabled: no
+  when: not moodle_enabled and not pathagar_enabled
+
+
+- name: Add 'pathagar' variable values to {{ iiab_ini_file }}
+  ini_file:
+    path: "{{ iiab_ini_file }}"
+    section: pathagar
+    option: "{{ item.option }}"
+    value: "{{ item.value | string }}"
+  with_items:
+    - option: name
+      value: pathagar
+    - option: description
+      value: '"Pathagar is a simple bookserver serving OPDS feeds"'
+    - option: path
+      value: /books

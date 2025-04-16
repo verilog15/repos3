@@ -1,0 +1,54 @@
+# Common OS-Level Additions & Mods (that only need to be performed once)
+
+- name: ...IS BEGINNING ==========================================
+  meta: noop
+
+- name: Create IIAB directory structure ("file layout")
+  include_tasks: fl.yml
+
+- include_tasks: packages.yml
+
+- name: "Use 'sysctl' to set 'kernel.core_uses_pid: 1' in /etc/sysctl.conf"
+  sysctl:    # Places these settings in /etc/sysctl.conf, to survive reboot
+    name: "{{ item.name }}"
+    value: "{{ item.value }}"
+  with_items:
+    #- { name: 'kernel.sysrq', value: '1' }             # OS values differ, Ok?
+    - { name: 'kernel.core_uses_pid', value: '1' }
+    #- { name: 'kernel.shmmax', value: '268435456' }    # OS values differ, Ok?
+
+- include_tasks: iiab-startup.yml
+
+
+# UNMAINTAINED
+#- include_tasks: centos.yml
+#  when: ansible_distribution == "CentOS"
+
+# UNMAINTAINED
+#- include_tasks: fedora.yml
+#  when: ansible_distribution == "Fedora"
+
+# UNMAINTAINED
+#- include_tasks: prep.yml
+#  when: not is_debuntu
+
+# UNMAINTAINED
+#- include_tasks: xo.yml
+#  when: xo_model != "none" or osbuilder is defined
+
+# UNMAINTAINED
+#- include_tasks: net_mods.yml
+#  when: not is_debuntu and not is_F18
+
+# UNMAINTAINED
+#- name: Install /etc/profile.d/zzz_iiab.sh from template, to add sbin dirs to unprivileged users' $PATH
+#  template:
+#    dest: /etc/profile.d/zzz_iiab.sh
+#    src: zzz_iiab.sh
+
+
+- name: Recording STAGE 2 HAS COMPLETED ==========================
+  lineinfile:
+    path: "{{ iiab_env_file }}"
+    regexp: '^STAGE=*'
+    line: 'STAGE=2'

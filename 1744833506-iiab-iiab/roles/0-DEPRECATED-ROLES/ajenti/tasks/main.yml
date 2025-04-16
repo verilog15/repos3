@@ -1,0 +1,62 @@
+- name: Install python-pip package
+  package: name=python-pip
+           state=present
+
+- name: Install required libraries
+  package: name={{ item.pkg }}
+           state=present
+  with_items:
+    - pkg: python-imaging
+    - pkg: python-devel
+    - pkg: libxslt-devel
+    - pkg: pyOpenSSL
+    - pkg: python-daemon
+    - pkg: gcc
+
+- name: Install ajenti from our repo
+  pip: name="{{ iiab_download_url }}"/ajenti-0.99.34-patched5.tar.gz
+  when: internet_available 
+
+#  notify:
+#    - restart ajenti service
+
+- name: download python-catcher
+  pip: name=python-catcher version=0.1.3
+  when: internet_available 
+
+- name: change default port
+  lineinfile: backup=yes
+              dest=/etc/ajenti/config.json
+              state=present
+              backrefs=yes
+              regexp='"port":\s*[0-9]{1,5}'
+              line='"port":9990'
+
+- name: exe permission to ajenti
+  file: path=/etc/rc.d/init.d/ajenti
+        mode=0744
+        state=file
+
+- include_tasks: ajenti-wondershaper.yml
+  when: 'iiab_lan_iface != ""'
+
+# handler doesn't fire
+- name: restart ajenti service
+  service: name=ajenti
+           enabled=yes
+           state=restarted
+  when: ajenti_enabled
+
+- name: Add 'ajenti' variable values to {{ iiab_ini_file }}
+  ini_file:
+    path: "{{ iiab_ini_file }}"
+    section: ajenti
+    option: "{{ item.option }}"
+    value: "{{ item.value | string }}"
+  with_items:
+    - option: name
+      value: ajenti
+    - option: description
+      value: "Ajenti is a client server systems administration tool controlled by a web browser"
+    - option: enabled
+      value: "{{ ajenti_enabled }}"

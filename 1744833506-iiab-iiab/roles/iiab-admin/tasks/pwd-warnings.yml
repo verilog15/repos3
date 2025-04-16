@@ -1,0 +1,36 @@
+# 2022-07-22: SIMILAR TO roles/www_options/tasks/main.yml FOR browser
+#                    AND roles/network/tasks/netwarn.yml  FOR iiab-network
+
+
+- name: Install /etc/profile.d/iiab-pwdwarn-profile.sh from template, to issue warnings (during shell/ssh logins) if iiab-admin password is the default
+  template:
+    src: iiab-pwdwarn-profile.sh.j2
+    dest: /etc/profile.d/iiab-pwdwarn-profile.sh
+    mode: '0644'
+
+- name: Does directory /home/{{ iiab_admin_user }}/.config/labwc/ exist?
+  stat:
+    path: /home/{{ iiab_admin_user }}/.config/labwc/
+  register: labwc_dir
+
+- name: "If so, install from template: /usr/local/sbin/iiab-pwdwarn-labwc"
+  template:
+    src: iiab-pwdwarn-labwc.j2
+    dest: /usr/local/sbin/iiab-pwdwarn-labwc
+    mode: '0755'
+  when: labwc_dir.stat.exists and labwc_dir.stat.isdir
+
+# 2019-03-07: This pop-up (/etc/xdg/lxsession/LXDE-pi/sshpwd-lxde-iiab.sh) did
+# not actually appear when triggered by /etc/xdg/autostart/pprompt-iiab.desktop
+# (or pprompt.desktop as Raspbian has working since 2018-11-13!)  Too bad as it
+# would be really nice to standardize pop-ups across Ubermix & all distros...
+# Is this a permissions/security issue presumably?  Official autostart spec is:
+# https://specifications.freedesktop.org/autostart-spec/autostart-spec-latest.html
+# Raspbian's 2016-2018 evolution here: https://github.com/iiab/iiab/issues/1537
+
+- name: ...and put a line in /home/{{ iiab_admin_user }}/.config/labwc/autostart to trigger iiab-pwdwarn-labwc (& pop-up as nec)
+  lineinfile:
+    path: /home/{{ iiab_admin_user }}/.config/labwc/autostart    # iiab-admin
+    create: yes
+    line: '/usr/local/sbin/iiab-pwdwarn-labwc &'
+  when: labwc_dir.stat.exists and labwc_dir.stat.isdir

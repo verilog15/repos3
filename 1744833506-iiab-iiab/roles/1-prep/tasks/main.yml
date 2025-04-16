@@ -1,0 +1,83 @@
+# Preparations (low-level e.g. remote support, DNS prep, HW/OS, basic security)
+
+- name: ...IS BEGINNING ============================================
+  meta: noop
+
+- name: SSHD
+  include_role:
+    name: sshd
+  when: sshd_install
+
+- name: TAILSCALE (VPN)
+  include_role:
+    name: tailscale
+  when: tailscale_install
+
+- name: REMOTE.IT
+  include_role:
+    name: remoteit
+  when: remoteit_install
+
+- name: IIAB-ADMIN -- includes {lynx, screen, sudo-prereqs.yml, admin-user.yml, pwd-warnings.yml}
+  include_role:
+    name: iiab-admin
+  #when: iiab_admin_install    # Flag might be created in future?
+
+- name: Copy iiab-apps-to-be-installed from {{ iiab_dir }}/scripts to /usr/bin/
+  copy:
+    src: "{{ iiab_dir }}/scripts/iiab-apps-to-be-installed"    # /opt/iiab/iiab
+    dest: /usr/bin/
+    mode: '0755'
+
+- name: Copy iiab-network from {{ iiab_dir }}/scripts to /usr/local/bin/
+  copy:
+    src: "{{ iiab_dir }}/scripts/iiab-network"
+    dest: /usr/local/bin/
+    mode: '0755'
+
+- name: Install ~12 network/wifi/related packages + Squid if necessary + configure /etc/sysctl.conf -- full configuration LATER in 'network', after Stage 9
+  include_tasks: roles/network/tasks/install.yml
+  when: network_install and network_installed is undefined
+
+- include_tasks: uuid.yml
+- include_tasks: ubermix.yml
+
+- name: install-expand-rootfs.yml, raspberry_pi.yml, NUC6 WiFi firmware, check for WiFi devices
+  include_tasks: hardware.yml
+
+
+# Debian 10 "Buster" is apparently enabling AppArmor in 2019:
+# https://wiki.debian.org/AppArmor/Progress
+# https://wiki.debian.org/AppArmor/HowToUse
+# https://packages.debian.org/buster/apparmor
+# Curiously this has NOT stopped IIAB 7.0/master from working on Debian 10
+# pre-releases, during @floydianslips' March 2019 testing anyway!  SEE #1387
+
+# PR #2654 - AppArmor works w/ IIAB on Debian 10/11, so also now on Ubuntu?
+#- name: Disable AppArmor -- override OS default (ubuntu)
+#  systemd:
+#    name: apparmor
+#    enabled: False
+#    state: stopped
+#  when: is_ubuntu
+#  ignore_errors: True
+
+# PR #2648 - Can be restored in future if truly nec, w ansible.posix collection
+#- name: Disable SELinux on next boot (OS's other than debuntu)
+#  selinux:
+#    state: disabled
+#  register: selinux_disabled
+#  when: not is_debuntu
+
+#- name: Disable SELinux for this session (OS's other than debuntu, if needed)
+#  command: setenforce Permissive
+#  when: not is_debuntu and selinux_disabled is defined and selinux_disabled.changed
+
+
+- name: Install {{ iiab_env_file }} from template -- FYI this file can be run as a script if absolutely nec -- e.g. 'source /etc/iiab/iiab.env && echo $WWWROOT'
+  template:
+    src: roles/1-prep/templates/iiab.env.j2
+    dest: "{{ iiab_env_file }}"
+
+- name: Recording STAGE 1 HAS COMPLETED ============================
+  meta: noop

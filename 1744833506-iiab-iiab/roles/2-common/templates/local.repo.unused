@@ -1,0 +1,5 @@
+[iiab-local]
+name=iiab-local
+baseurl=file://{{ yum_packages_dir }}
+enabled=1
+gpgcheck=0

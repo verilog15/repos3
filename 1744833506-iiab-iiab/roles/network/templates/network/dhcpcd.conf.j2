@@ -1,0 +1,89 @@
+# A sample configuration for dhcpcd.
+# See dhcpcd.conf(5) for details.
+
+# Allow users of this group to interact with dhcpcd via the control socket.
+#controlgroup wheel
+
+# Inform the DHCP server of our hostname for DDNS.
+hostname
+
+# Use the hardware address of the interface for the Client ID.
+clientid
+# or
+# Use the same DUID + IAID as set in DHCPv6 for DHCPv4 ClientID as per RFC4361.
+# Some non-RFC compliant DHCP servers do not reply with this set.
+# In this case, comment out duid and enable clientid above.
+#duid
+
+# Persist interface configuration when dhcpcd exits.
+persistent
+
+# Rapid commit support.
+# Safe to enable by default because it requires the equivalent option set
+# on the server to actually work.
+option rapid_commit
+
+# A list of options to request from the DHCP server.
+option domain_name_servers, domain_name, domain_search, host_name
+option classless_static_routes
+# Most distributions have NTP support.
+option ntp_servers
+# Respect the network MTU. This is applied to DHCP routes.
+option interface_mtu
+
+# A ServerID is required by RFC2131.
+require dhcp_server_identifier
+
+# Generate Stable Private IPv6 Addresses instead of hardware based ones
+slaac private
+
+# IIAB
+{% if iiab_wireless_lan_iface is defined %}
+denyinterfaces {{ iiab_wireless_lan_iface }}
+{% endif %}
+
+# Setting iiab_wired_lan_iface would install the device as a slave under
+# br0 so we need to turn off the dhcp client in that network layout.
+# Auto creation of the wired slave is suppressed in discovered_network.yml
+# -> Set iiab_wired_lan_iface if present is conditional on is_raspbian
+# Slave creation can be forced by populating local_vars.yml with
+# 'iiab_wired_lan_iface: eth0' which populates /etc/network/interfaces.d/iiab
+# with 'bridge_ports eth0' in place of 'bridge_ports none'
+# Always (try) to run DHCP client on RPi's Ethernet port, for in-field
+# "cablemodems" used by many non-technical operators, who want Zero-Hassle
+# Updates.  This means AVOIDING "denyinterfaces eth0" below:
+{% if iiab_wired_lan_iface is defined %}
+denyinterfaces {{ iiab_wired_lan_iface }}
+{% endif %}
+
+{% if dhcpcd_result == "enabled" and iiab_lan_iface != "none" %}
+interface {{ iiab_lan_iface }}
+{% if network_172 %}
+static ip_address={{ lan_ip }}/19
+{% else %}
+static ip_address={{ lan_ip }}/24
+{% endif %}
+static domain_name_servers=127.0.0.1
+{% endif %}
+
+# IIAB static IP configuration, possibly trying DHCP first
+{% if wan_ip != "dhcp" %}
+{% if wan_try_dhcp_before_static_ip %}
+profile static_eth0
+static ip_address={{ wan_ip }}/24
+static routers={{ wan_gateway }}
+static domain_name_servers={{ wan_nameserver }}
+
+# Check for DHCP on the wire first (for occasional field updates of IIAB, e.g.
+# Ethernet cable to a "cablemodem") before falling back to the above Static IP
+# (e.g. IIAB as 192.168.1.99 in Chiapas, Mexico where schools have typically
+# hard-coded their student PC's as 192.168.1.1, 192.168.1.2, 192.168.1.3, etc).
+interface {{ iiab_wan_iface }}
+fallback static_eth0
+{% else %}
+interface {{ iiab_wan_iface }}
+static ip_address={{ wan_ip }}/24
+static routers={{ wan_gateway }}
+static domain_name_servers={{ wan_nameserver }}
+{% endif %}
+{% endif %}

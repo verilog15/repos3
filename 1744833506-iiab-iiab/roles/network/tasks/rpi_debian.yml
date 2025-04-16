@@ -1,0 +1,96 @@
+# rpi_debian.yml
+# Start out making simplifying assumptions
+#   1. we are dealing with a rpi3
+#   2. Gui inputs define the config -- auto config is more difficult
+#      a. gui_desired_network_role
+#      b. hostapd_enabled
+#      c. gui_static_wan_ip
+#   3. In appliance mode: wan is either wired dhcp/static or wlan0 and hostapd off
+#   4. In lan_controller: wan is off, eth0 and wlan0 under br0
+#   5. In gateway: user gateway is wan, and wlan0 under br0 if not acting as
+#      the gateway
+
+- name: Supply resolvconf.conf
+  template:
+    dest: /etc/resolvconf.conf
+    src: network/resolvconf.j2
+
+- name: Supply dhcpcd.conf
+  template:
+    dest: /etc/dhcpcd.conf
+    src: network/dhcpcd.conf.j2
+
+- name: Create dhcpcd hook for hostapd and ap0 when wifi_up_down True
+  template:
+    src: hostapd/50-hostapd
+    dest: /lib/dhcpcd/dhcpcd-hooks/50-hostapd
+    owner: root
+    group: root
+    mode: 0644
+  when: wifi_up_down
+
+- name: Remove dhcpcd hook for hostapd if WiFi is not split using ap0
+  file:
+    path: /lib/dhcpcd/dhcpcd-hooks/50-hostapd
+    state: absent
+  when: not wifi_up_down
+
+- name: New Raspbian requires country code -- check for it
+  shell: grep country /etc/wpa_supplicant/wpa_supplicant.conf | awk -F = '{print $2}'
+  register: country_code
+  ignore_errors: True
+  when: wifi_up_down and can_be_ap
+
+- name: Set country code for hostapd to value found in /etc/wpa_supplicant/wpa_supplicant.conf
+  set_fact:
+    host_country_code: "{{ country_code.stdout }}"
+  when: country_code.stdout is defined and country_code.stdout | length > 0
+
+- name: Put country code ({{ host_country_code }}) in /etc/wpa_supplicant/wpa_supplicant.conf if nec
+  lineinfile:
+    path: /etc/wpa_supplicant/wpa_supplicant.conf
+    regexp: "^country.*"
+    line: country={{ host_country_code }}
+  when: country_code.stdout is defined and country_code.stdout | length == 0
+
+# 2024-12-18: SEE 'raspi-config nonint do_wifi_country {{ host_country_code }}' in roles/network/tasks/main.yml
+# # This should go away, should only be unblocked by raspi-config
+# - name: Enable the WiFi with rfkill
+#   shell: rfkill unblock wifi
+#   ignore_errors: True
+
+- name: Copy the bridge script for RPi
+  template:
+    dest: /etc/network/interfaces.d/iiab
+    src: network/rpi.j2
+    #src: network/iiab.j2    2019-02-05: caused ./iiab-network to fail repeatedly in recent days on one particular RPi 3, even after reboot ("Unable to start service networking: Job for networking.service failed..." at "Restart the networking service if appropriate") ...leaving dnsmasq off (#1452)
+  when: iiab_wired_lan_iface is defined
+
+- name: Use bind-dynamic for dnsmasq
+  template:
+    dest: /etc/dnsmasq.d/dnsmasq-iiab
+    src: network/dnsmasq-iiab
+  when: iiab_lan_iface == "br0"
+
+#- name: Stopping services
+#  include_tasks: down-debian.yml
+
+- name: Reload systemd
+  systemd:
+    daemon_reload: yes
+
+- name: Restart the networking service if appropriate
+  systemd:
+    name: networking
+    enabled: yes
+    state: restarted
+  when: iiab_wired_lan_iface is defined
+
+#- name: Stop wpa_supplicant on Raspbian
+#  shell: killall wpa_supplicant
+
+# now pick up denyinterfaces and respawn wpa_supplicant
+- name: Restart dhcpcd on Raspbian
+  systemd:
+    name: dhcpcd
+    state: restarted

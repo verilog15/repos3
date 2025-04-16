@@ -1,0 +1,20 @@
+# kalite_install: True
+# kalite_enabled: True
+
+# kalite_server_port: 8008
+# kalite_root: "{{ content_base }}/ka-lite"    # /library/ka-lite
+
+# All above are set in: github.com/iiab/iiab/blob/master/vars/default_vars.yml
+# If nec, change them by editing /etc/iiab/local_vars.yml prior to installing!
+
+kalite_version: 0.17.5
+kalite_requirements: https://raw.githubusercontent.com/learningequality/ka-lite/master/requirements.txt
+
+kalite_venv: /usr/local/kalite/venv
+kalite_program: "{{ kalite_venv }}/bin/kalite"
+
+kalite_admin_user: Admin
+kalite_admin_password: changeme
+
+# Set to "" on F18, for templates/kalite-serve.service.j2
+job_scheduler_stanza: "--skip-job-scheduler "

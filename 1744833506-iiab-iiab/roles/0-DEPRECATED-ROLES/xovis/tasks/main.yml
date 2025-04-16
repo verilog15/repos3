@@ -1,0 +1,98 @@
+- name: Install CouchDB and other necessary packages
+  package: name={{ item }}
+           state=present
+  with_items:
+    - couchdb
+    - curl
+    - python-pip
+    - nodejs
+    - npm
+  when: internet_available
+
+- name: Determine if xovis is already downloaded
+  stat: path={{ downloadds_dir }}/xovis/xxx
+  register: xovis
+
+- name: download the latest xovis repo
+  git: repo={{ xovis_repo_url }}
+       dest={{ downloads_dir }}/xovis
+       depth=1
+  when: internet_available  and xovis.stat.exists is defined and not xovis.stat.exists
+
+- name: Install node.js package kanso to maintain couchdb
+  npm: name=kanso
+       global=yes
+       path={{ downloads_dir }}
+  when: internet_available
+
+- name: move the xovis repo into place
+  shell: "cp -rp {{ downloads_dir }}/xovis {{ xovis_root }}"
+
+- name: Make sure the XO users directory exists
+  file: state=directory
+        dest=/library/users
+        owner=root
+        group=root
+        mode=0755
+
+- name: Install the xovis python dependencies
+  pip: requirements={{ xovis_root }}/process_stats/requirements.txt
+  when: internet_available
+
+- name: Update xovis repo with Chart Heading
+  lineinfile: dest="{{ xovis_root }}/index.html" regexp='(.+)<h1>(.*)</h1>' line='\1<h1>{{ xovis_chart_heading }}</h1>' backrefs=yes
+
+- name: Allow access to Couchdb from other hosts
+  command: sed -i 's/^\(bind_address\s*=\s*\).*$/\10\.0\.0\.0/' /etc/couchdb/default.ini
+
+- name: Enable CouchDB service
+  service: name=couchdb
+           enabled=yes
+           state=started
+  when: xovis_enabled
+
+- name: Wait for CouchDB to become ready
+  wait_for: port=5984
+            delay=1
+            timeout=5
+  when: xovis_enabled
+
+- name: Add admin user
+  command: curl -X PUT {{ xovis_target_host }}/_config/admins/{{ xovis_db_user }} -d "\"{{ xovis_db_password }}\""
+  when: xovis_enabled
+
+- name: Check if db exists
+  shell: "kanso listdb | grep {{ xovis_db_name }}"
+  register: found_db
+  ignore_errors: yes
+
+- name: Create CouchDB database if does not already exist
+  command: kanso createdb {{ xovis_db_url }}
+  when: xovis_enabled and found_db.stdout != xovis_db_name
+
+- name: Load initial xovis database
+  command: kanso push {{ xovis_root }} {{ xovis_db_url }}
+  when: xovis_enabled and found_db.stdout != xovis_db_name
+
+- name: Insert Sugar Journal metadata into Couchdb
+  command: "{{ xovis_root }}/process_stats/process_journal_stats.py dbinsert {{ xovis_db_name }}
+  -d {{ xovis_backup_dir }}
+  --deployment {{ xovis_deployment_name }}
+  --server http://{{ xovis_db_login }}@{{ xovis_target_host }}"
+  when: xovis_enabled
+
+- name: Add 'xovis' variable values to {{ iiab_ini_file }}
+  ini_file:
+    path: "{{ iiab_ini_file }}"
+    section: xovis
+    option: "{{ item.option }}"
+    value: "{{ item.value | string }}"
+  with_items:
+    - option: name
+      value: xovis
+    - option: description
+      value: '"XOVis - Analytics and Visualization for Sugar and OLPC"'
+    - option: installed
+      value: "{{ xovis_install }}"
+    - option: enabled
+      value: "{{ xovis_enabled }}"

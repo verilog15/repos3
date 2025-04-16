@@ -1,0 +1,243 @@
+#!/bin/bash -x
+
+################################################################################
+#                                                                              #
+# IF YOU NEED TO CHANGE ports_externally_visible DO THAT IN:                   #
+#                                                                              #
+#   /etc/iiab/local_vars.yml                                                   #
+#                                                                              #
+# This firewall variable must be an integer {0...5} as follows:                #
+#                                                                              #
+#   0 = none                                                                   #
+#   1 = ssh only                                                               #
+#   2 = ssh + http-or-https (for Admin Console's box.lan/admin too)            #
+#   3 = ssh + http-or-https + common IIAB services  <--  THIS IS THE DEFAULT   #
+#   4 = ssh + http-or-https + common IIAB services + Samba                     #
+#   5 = all but databases                                                      #
+#                                                                              #
+# Then enable it with iptables by running: cd /opt/iiab/iiab; ./iiab-network   #
+#                                                                              #
+################################################################################
+
+# To further customize your iptables firewall, it's generally best to edit:
+# /opt/iiab/iiab/roles/network/templates/gateway/iiab-gen-iptables
+# And then run: cd /opt/iiab/iiab; ./iiab-network
+
+# IIAB Networking Doc:
+# https://github.com/iiab/iiab/wiki/IIAB-Networking#firewall-iptables
+
+{% if is_debuntu %}
+IPTABLES=/sbin/iptables
+IPTABLES_DATA=/etc/iptables.up.rules
+{% else %}
+IPTABLES=/usr/sbin/iptables
+IPTABLES_DATA=/etc/sysconfig/iptables
+{% endif %}
+
+# 2023-02-25: bash scripts using default_vars.yml &/or local_vars.yml
+# https://github.com/iiab/iiab-factory/blob/master/iiab
+# https://github.com/iiab/iiab/blob/master/roles/firmware/templates/iiab-check-firmware#L10-14
+# https://github.com/iiab/iiab/blob/master/roles/network/templates/gateway/iiab-gen-iptables#L48-L52
+# https://github.com/iiab/maps/blob/master/osm-source/pages/viewer/scripts/iiab-install-map-region#L23-L39
+# https://github.com/iiab/iiab/blob/master/roles/0-DEPRECATED-ROLES/openvpn/templates/iiab-support READS AND WRITES, INCL NON-BOOLEAN
+
+# "awk '{print $2}'" almost works, but: (1) Fails to remove outer quotes, and
+# (2) Chops up Ansible vars containing multiple words w/o surrounding quotes.
+# So: sed is used instead, to emulate Ansible's parsing of vars from .yml
+
+iiab_var_value() {
+    v1=$(grep "^$1:\s" /opt/iiab/iiab/vars/default_vars.yml | tail -1 | sed "s/^$1:\s\+//; s/#.*//; s/\s*$//; s/^\(['\"]\)\(.*\)\1$/\2/")
+    v2=$(grep "^$1:\s" /etc/iiab/local_vars.yml | tail -1 | sed "s/^$1:\s\+//; s/#.*//; s/\s*$//; s/^\(['\"]\)\(.*\)\1$/\2/")
+    [ "$v2" != "" ] && echo $v2 || echo $v1    # [ "$v2" ] ALSO WORKS
+}
+
+source /etc/iiab/iiab.env
+lan=$IIAB_LAN_DEVICE
+wan=$IIAB_WAN_DEVICE
+iiab_gateway_enabled=$IIAB_GATEWAY_ENABLED
+echo
+echo "Extracted 3 network vars from /etc/iiab/iiab.env :"
+echo
+echo "lan: $lan"
+echo "wan: $wan"
+echo "iiab_gateway_enabled: $iiab_gateway_enabled"
+echo
+#network_mode=`grep iiab_network_mode_applied /etc/iiab/iiab.ini | gawk '{print $3}'`
+#echo -e "Network Mode: $network_mode\n"
+lan_ip=$(iiab_var_value lan_ip)    # e.g. 10.10.10.10
+
+ports_externally_visible=$(iiab_var_value ports_externally_visible)
+gw_block_https=$(iiab_var_value gw_block_https)
+sshd_port=$(iiab_var_value sshd_port)
+#gui_wan= [no longer needed]
+gui_port=$(iiab_var_value gui_port)
+block_DNS=$(iiab_var_value block_DNS)
+
+azuracast_ports=$(iiab_var_value azuracast_port_range_prefix)000:$(iiab_var_value azuracast_port_range_prefix)100
+azuracast_https_port=$(iiab_var_value azuracast_https_port)
+azuracast_http_port=$(iiab_var_value azuracast_http_port)
+calibre_port=$(iiab_var_value calibre_port)
+calibreweb_port=$(iiab_var_value calibreweb_port)
+cups_port=$(iiab_var_value cups_port)
+internetarchive_port=$(iiab_var_value internetarchive_port)
+jupyterhub_port=$(iiab_var_value jupyterhub_port)
+kalite_server_port=$(iiab_var_value kalite_server_port)
+kiwix_port=$(iiab_var_value kiwix_port)
+kolibri_http_port=$(iiab_var_value kolibri_http_port)
+luanti_port=$(iiab_var_value luanti_port)
+mosquitto_port=$(iiab_var_value mosquitto_port)
+nodered_port=$(iiab_var_value nodered_port)
+
+pbx_enabled=$(iiab_var_value pbx_enabled)
+pbx_http_port=$(iiab_var_value pbx_http_port)
+pbx_signaling_ports_chan_sip=$(iiab_var_value pbx_signaling_ports_chan_sip)
+pbx_signaling_ports_chan_pjsip=$(iiab_var_value pbx_signaling_ports_chan_pjsip)
+pbx_data_ports=$(iiab_var_value pbx_data_ports)
+
+sugarizer_port=$(iiab_var_value sugarizer_port)
+transmission_http_port=$(iiab_var_value transmission_http_port)
+transmission_peer_port=$(iiab_var_value transmission_peer_port)
+
+samba_udp_ports=$(iiab_var_value samba_udp_ports)
+samba_tcp_mports=$(iiab_var_value samba_tcp_mports)
+
+squid_enabled=$(iiab_var_value squid_enabled)
+
+echo -e "\nports_externally_visible: "$ports_externally_visible"\n"
+if ! [ "$ports_externally_visible" -eq "$ports_externally_visible" ] 2> /dev/null; then
+    echo "EXITING: an integer is required"
+    exit 1
+elif [ "$ports_externally_visible" -lt 0 ] || [ "$ports_externally_visible" -gt 5 ]; then
+    echo "EXITING: it must be in the range {0...5}"
+    exit 1
+fi
+
+# Delete all existing firewall rules
+$IPTABLES -F
+$IPTABLES -t nat -F
+$IPTABLES -X
+
+# FIRST MATCH WINS - establish iptable rules, starting at the top:
+# (verify the resulting rule set by running 'iptables -L -v')
+# New to iptables?  Run/read 'man iptables' & 'man iptables-extensions'
+
+# Always accept loopback traffic
+$IPTABLES -A INPUT -i lo -j ACCEPT
+
+# Disable access to databases, on LAN-side and WAN-side
+# SunRPC
+$IPTABLES -A INPUT -p tcp --dport 111 -j DROP
+$IPTABLES -A INPUT -p udp --dport 111 -j DROP
+# MySQL
+$IPTABLES -A INPUT -p tcp --dport 3306 -j DROP
+$IPTABLES -A INPUT -p udp --dport 3306 -j DROP
+# PostgreSQL - not needed listens on lo only
+$IPTABLES -A INPUT -p tcp --dport 5432 -j DROP
+$IPTABLES -A INPUT -p udp --dport 5432 -j DROP
+# CouchDB
+$IPTABLES -A INPUT -p tcp --dport 5984 -j DROP
+$IPTABLES -A INPUT -p udp --dport 5984 -j DROP
+
+# Allow established connections, and those not coming from the outside
+$IPTABLES -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+$IPTABLES -A INPUT -m state --state NEW -i $lan -j ACCEPT
+
+# Allow mDNS from WAN-side too (ON PURPOSE? WHY OUT OF CURIOSITY?)
+$IPTABLES -A INPUT -p udp --dport 5353 -j ACCEPT
+
+#if [ "$wan" != "none" ] && [ "$network_mode" != "Appliance" ]; then
+if [ "$wan" != "none" ]; then
+
+    # 1 = ssh only
+    if [ "$ports_externally_visible" -ge 1 ]; then
+        $IPTABLES -A INPUT -p tcp --dport $sshd_port -m state --state NEW -i $wan -j ACCEPT
+    fi
+
+    # 2 = ssh + http-or-https (for Admin Console's box.lan/admin too)
+    if [ "$ports_externally_visible" -ge 2 ]; then
+        # For now this is implemented using Admin Console variable "gui_port" from:
+        # https://github.com/iiab/iiab/blob/master/roles/0-init/tasks/main.yml#L87-L95
+        $IPTABLES -A INPUT -p tcp --dport $gui_port -m state --state NEW -i $wan -j ACCEPT
+    fi
+
+    # 3 = ssh + http-or-https + common IIAB services
+    if [ "$ports_externally_visible" -ge 3 ]; then
+        $IPTABLES -A INPUT -p tcp --dport $azuracast_ports -m state --state NEW -i $wan -j ACCEPT
+        $IPTABLES -A INPUT -p tcp --dport $azuracast_http_port -m state --state NEW -i $wan -j ACCEPT
+        $IPTABLES -A INPUT -p tcp --dport $azuracast_https_port -m state --state NEW -i $wan -j ACCEPT
+        $IPTABLES -A INPUT -p tcp --dport $calibre_port -m state --state NEW -i $wan -j ACCEPT
+        $IPTABLES -A INPUT -p tcp --dport $calibreweb_port -m state --state NEW -i $wan -j ACCEPT
+        $IPTABLES -A INPUT -p tcp --dport $cups_port -m state --state NEW -i $wan -j ACCEPT
+        $IPTABLES -A INPUT -p tcp --dport $internetarchive_port -m state --state NEW -i $wan -j ACCEPT
+        $IPTABLES -A INPUT -p tcp --dport $jupyterhub_port -m state --state NEW -i $wan -j ACCEPT
+        $IPTABLES -A INPUT -p tcp --dport $kalite_server_port -m state --state NEW -i $wan -j ACCEPT
+        $IPTABLES -A INPUT -p tcp --dport $kiwix_port -m state --state NEW -i $wan -j ACCEPT
+        $IPTABLES -A INPUT -p tcp --dport $kolibri_http_port -m state --state NEW -i $wan -j ACCEPT
+        $IPTABLES -A INPUT -p udp --dport $luanti_port -m state --state NEW -i $wan -j ACCEPT
+        $IPTABLES -A INPUT -p tcp --dport $mosquitto_port -m state --state NEW -i $wan -j ACCEPT
+        $IPTABLES -A INPUT -p tcp --dport $nodered_port -m state --state NEW -i $wan -j ACCEPT
+
+        if [ "$pbx_enabled" == "True" ]; then
+            $IPTABLES -A INPUT -p tcp --dport $pbx_http_port -m state --state NEW -i $wan -j ACCEPT
+            $IPTABLES -A INPUT -p udp --dport $pbx_signaling_ports_chan_sip -m state --state NEW -i $wan -j ACCEPT
+            $IPTABLES -A INPUT -p udp --dport $pbx_signaling_ports_chan_pjsip -m state --state NEW -i $wan -j ACCEPT
+            $IPTABLES -A INPUT -p udp --dport $pbx_data_ports -m state --state NEW -i $wan -j ACCEPT
+        fi
+
+        $IPTABLES -A INPUT -p tcp --dport $sugarizer_port -m state --state NEW -i $wan -j ACCEPT
+        $IPTABLES -A INPUT -p tcp --dport $transmission_http_port -m state --state NEW -i $wan -j ACCEPT
+        $IPTABLES -A INPUT -p tcp --dport $transmission_peer_port -m state --state NEW -i $wan -j ACCEPT
+    fi
+
+    # 4 = ssh + http-or-https + common IIAB services + Samba
+    if [ "$ports_externally_visible" -ge 4 ]; then
+        $IPTABLES -A INPUT -p udp --dport $samba_udp_ports -m state --state NEW -i $wan -j ACCEPT
+        $IPTABLES -A INPUT -p tcp -m multiport --dports $samba_tcp_mports -m state --state NEW -i $wan -j ACCEPT
+    fi
+
+    if [ "$lan" != "none" ]; then
+        # Typically False, to keep client machines (e.g. students) off the Internet
+        if [ "$iiab_gateway_enabled" == "True" ]; then
+            $IPTABLES -A POSTROUTING -t nat -o $wan -j MASQUERADE
+        fi
+
+        # 3 or 4 IP forwarding rules
+        $IPTABLES -A FORWARD -i $wan -o $lan -m state --state ESTABLISHED,RELATED -j ACCEPT
+        # Block https traffic except if directed at server
+        if [ "$gw_block_https" == "True" ]; then
+            $IPTABLES -A FORWARD -p tcp ! -d $lan_ip --dport 443 -j DROP
+        fi
+        # Allow outgoing connections from the LAN side
+        $IPTABLES -A FORWARD -i $lan -o $wan -j ACCEPT
+        # Don't forward from the outside to the inside
+        $IPTABLES -A FORWARD -i $wan -o $lan -j DROP
+        # Enable routing (kernel IP forwarding)
+        echo 1 > /proc/sys/net/ipv4/ip_forward
+    fi
+
+    # 5 = "all but databases"
+    if [ "$ports_externally_visible" -lt 5 ]; then
+        # Drop everything else arriving via WAN
+        $IPTABLES -A INPUT -i $wan -j DROP
+    fi
+fi
+
+# TCP & UDP block of DNS port 53 if truly nec
+if [ "$block_DNS" == "True" ]; then
+    $IPTABLES -t nat -A PREROUTING -i $lan -p tcp --dport 53 ! -d $lan_ip -j DNAT --to $lan_ip:53
+    $IPTABLES -t nat -A PREROUTING -i $lan -p udp --dport 53 ! -d $lan_ip -j DNAT --to $lan_ip:53
+fi
+
+# if [ "$HTTPCACHE_ON" == "True" ]; then    # Via /etc/iiab/iiab.env
+if [ "$squid_enabled" == "True" ]; then     # Direct from default_vars.yml and local_vars.yml
+    $IPTABLES -t nat -A PREROUTING -i $lan -p tcp --dport 80 ! -d $lan_ip -j DNAT --to $lan_ip:3128
+fi
+
+# Save the whole rule set
+{% if is_debuntu %}
+netfilter-persistent save
+{% else %}
+iptables-save > $IPTABLES_DATA
+{% endif %}
+
+exit 0

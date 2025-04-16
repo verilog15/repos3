@@ -1,0 +1,9 @@
+# /etc/systemd/network/IIAB-Slave-{{ item|trim }}.network
+[Match]
+Name={{ item|trim }}
+
+[Link]
+RequiredForOnline=no
+
+[Network]
+Bridge=br0

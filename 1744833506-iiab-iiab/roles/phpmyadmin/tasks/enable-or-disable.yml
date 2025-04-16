@@ -1,0 +1,13 @@
+- name: Enable phpMyAdmin via nginx, if phpmyadmin_enabled
+  template:
+    src: phpmyadmin.conf.j2
+    dest: "{{ nginx_conf_dir }}/phpmyadmin.conf"
+  when: phpmyadmin_enabled
+  #when: apache_installed is defined and phpmyadmin_enabled
+
+- name: Disable phpMyAdmin via nginx, if not phpmyadmin_enabled
+  file:
+      path: "{{ nginx_conf_dir }}/phpmyadmin.conf"
+      state: absent
+  when: not phpmyadmin_enabled
+  #when: apache_installed is defined and not phpmyadmin_enabled

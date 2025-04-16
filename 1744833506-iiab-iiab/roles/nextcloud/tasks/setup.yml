@@ -1,0 +1,93 @@
+- name: 'Create MySQL database with name: {{ nextcloud_dbname }}'
+  mysql_db:
+    name: "{{ nextcloud_dbname }}"
+
+- name: Add username/password to the MySQL database (associated with trusted IP's like localhost)
+  mysql_user:
+    name: "{{ nextcloud_dbuser }}"
+    host: "{{ item }}"
+    password: "{{ nextcloud_dbpassword }}"
+    priv: "{{ nextcloud_dbname }}.*:ALL,GRANT"
+  with_items:
+#    - 127.0.0.1
+#    - ::1
+    - localhost
+
+
+# https://docs.nextcloud.com/server/latest/admin_manual/installation/command_line_installation.html
+- name: Create data dir {{ nextcloud_data_dir }} ({{ apache_user }}:{{ apache_user }})
+  file:
+    state: directory
+    path: "{{ nextcloud_data_dir }}"    # /library/www/nextcloud/data
+    owner: "{{ apache_user }}"          # www-data on debuntu
+    group: "{{ apache_user }}"
+
+# 1 of 3: Very Old Way... from OwnCloud days
+#- name: Install {{ nextcloud_root_dir }}/config/autoconfig.php from template
+#  template:
+#    src: autoconfig.php.j2
+#    dest: "{{ nextcloud_root_dir }}/config/autoconfig.php"
+#    owner: "{{ apache_user }}"
+#    group: "{{ apache_user }}"
+#    mode: '0640'
+
+# 2 of 3: Another Possible Way... not quite ready for prime time
+# - name: Set 'datadirectory' to {{ nextcloud_data_dir }} in {{ nextcloud_root_dir }}/config/config.php
+#   lineinfile:
+#     path: "{{ nextcloud_root_dir }}/config/config.php"
+#     regexp: "^  'datadirectory' => "
+#     insertafter: '^\$CONFIG = array \('
+#     line: "  'datadirectory' => '{{ nextcloud_data_dir }}',"
+
+- name: "Run 'php {{ nextcloud_root_dir }}/occ status' to determine if Nextcloud is installed (causing INSTALL WIZARD TO FAIL in the next step)"
+  shell: >
+    php {{ nextcloud_root_dir }}/occ status |
+    gawk '/installed:/ { print $3 }'
+  become: yes
+  become_user: "{{ apache_user }}"
+  register: returned
+
+# 3 of 3: NEW WAY IN 2020... use --data-dir "{{ nextcloud_data_dir }}"
+# https://docs.nextcloud.com/server/latest/admin_manual/installation/command_line_installation.html
+# https://docs.nextcloud.com/server/latest/admin_manual/configuration_server/occ_command.html#command-line-installation-label
+# ...page lists alternative 'occ' commands.  If Nextcloud's already installed,
+# attempting 'maintenance:install' (below) also lists these options:
+#   app:install
+#   maintenance:data-fingerprint
+#   maintenance:mimetype:update-db
+#   maintenance:mimetype:update-js
+#   maintenance:mode
+#   maintenance:repair
+#   maintenance:theme:update
+#   maintenance:update:htaccess
+- name: Run Nextcloud initial install wizard, seeding data dir {{ nextcloud_data_dir }} (IF THIS FAILS, CONSIDER 'sudo mysql' THEN 'DROP DATABASE {{ nextcloud_dbname }};' THEN RERUN THIS)
+  shell: >
+    cd {{ nextcloud_root_dir }};
+    php occ maintenance:install
+    --database "mysql"
+    --database-name "{{ nextcloud_dbname }}"
+    --database-user "{{ nextcloud_dbuser }}"
+    --database-pass "{{ nextcloud_dbpassword }}"
+    --admin-user "{{ nextcloud_admin_user }}"
+    --admin-pass "{{ nextcloud_admin_password }}"
+    --data-dir "{{ nextcloud_data_dir }}"
+  become: yes
+  become_user: "{{ apache_user }}"
+  when: returned.stdout == "false"    # and nextcloud_enabled
+  #when: nextcloud_installed is undefined
+  #args:
+  #  creates: "{{ nextcloud_root_dir }}/SOME_FILE"    # /library/www/nextcloud/SOME_FILE
+
+
+# https://docs.nextcloud.com/server/latest/admin_manual/installation/source_installation.html#php-fpm-configuration-notes
+- name: Set 'clear_env = no' in /etc/php/{{ php_version }}/fpm/pool.d/www.conf
+  lineinfile:
+    path: "/etc/php/{{ php_version }}/fpm/pool.d/www.conf"
+    regexp: '^clear_env'
+    insertafter: ';.*clear_env'
+    line: 'clear_env = no'
+
+- name: 'Allow Nextcloud access from all hosts and IP addresses -- SEE ALSO THE OLD WAY: https://github.com/iiab/iiab/blob/master/roles/nextcloud/templates/nextcloud.conf.j2.unused'
+  command: php {{ nextcloud_root_dir }}/occ config:system:set trusted_domains 1 --value=*
+  become: yes
+  become_user: "{{ apache_user }}"

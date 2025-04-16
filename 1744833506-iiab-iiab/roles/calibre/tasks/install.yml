@@ -1,0 +1,106 @@
+- name: Record (initial) disk space used
+  shell: df -B1 --output=used / | tail -1
+  register: df1
+
+
+# 1. APT INSTALL CALIBRE 4.12+ or 5.12+ (calibre, calibredb, calibre-server etc) ON ALL OS'S
+
+- name: "Install OS's latest packages: calibre, calibre-bin"
+  package:
+    name:
+      - calibre
+      - calibre-bin
+    state: latest
+
+# 2020-04-29: AT YOUR OWN RISK, this *sometimes* works, e.g. to upgrade from
+# Raspbian 10's Calibre 3.39.1 to "4.99.4+dfsg+really4.12.0-1" or higher, from:
+# http://raspbian.raspberrypi.org/raspbian/pool/main/c/calibre/
+# http://archive.raspbian.org/raspbian/pool/main/c/calibre/
+#
+#- name: Install Calibre via .debs (if Raspbian)
+#  command: scripts/calibre-install-latest-rpi.sh    # WORKED for Calibre 3.33.1 on 2018-10-23.  And Calibre 3.28 on 2018-07-26 (PR #971).  Likewise for Calibre 3.26.x.  FAILED with Calibre 3.24+ ("calibre : Depends: python-pyqt5 (>= 5.10.1+dfsg-2) but 5.10.1+dfsg-1+rpi1 is to be installed") since June 2018.
+#  when: is_raspbian
+
+# 2020-04-29: Can work *IF* you do 'apt install python2' and change top line
+# of /opt/iiab/downloads/calibre-installer.py from '#!/usr/bin/env python2'
+# to '#!/usr/bin/python2' e.g. to upgrade Calibre 4.12 on Ubuntu 20.04 LTS.
+#
+#- name: Install Calibre via py-installer.yml -> calibre-installer.py (if not Raspbian)
+#  include_tasks: py-installer.yml
+#  when: not is_raspbian    # True Debian or any Ubuntu?
+
+# SEE calibre_via_python's value vars/default_vars.yml, vars/ubuntu-18.yml &
+# vars/raspbian-9.yml: try to AVOID Python installer on Raspbian since its
+# .deb's (http://raspbian.raspberrypi.org/raspbian/pool/main/c/calibre/)
+# are updated within about 10 days of Calibre's quasi-monthly releases!
+#
+# BUT IF ABSOLUTELY NEC: (SEE roles/calibre/tasks/debs.yml)
+# - run testing branch for RPi: scripts/calibre-install-latest-rpi.sh
+# - run testing branch for Ubuntu 16.04: scripts/calibre-install-latest.sh
+# - run unstable branch for Debian etc: scripts/calibre-install-unstable.sh
+
+
+# 2. SYSTEMD SERVICES
+
+- name: 'Install from template: /etc/systemd/system/calibre-serve.service'
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+  with_items:
+    - { src: 'calibre-serve.service.j2', dest: '/etc/systemd/system/calibre-serve.service' }
+    #- { src: 'calibre.conf', dest: '/etc/{{ apache_conf_dir }}' }    # apache2/sites-available (this doesn't work, see #529: let's try to create /etc/nginx/conf.d/calibre-nginx.conf in future!)
+
+- name: Stop service 'calibre-serve' (/usr/bin/calibre-server by Kovid Goyal)
+  systemd:
+    name: calibre-serve
+    state: stopped
+    daemon_reload: yes
+
+
+# 3. CREATE USER DATABASE
+
+- name: Create {{ calibre_dbpath }} (mandatory since Calibre 3.x)
+  file:
+    path: "{{ calibre_dbpath }}"    # /library/calibre
+    state: directory
+
+- name: Copy template userdb to {{ calibre_userdb }}
+  copy:
+    src: /opt/iiab/iiab/roles/calibre/templates/users.sqlite
+    dest: "{{ calibre_userdb }}"    # /library/calibre/users.sqlite
+
+
+# 4. CREATE CONTENT DATABASE WITH A SAMPLE BOOK (REQUIRED AS OF CALIBRE 3.x)
+
+- name: Does /library/calibre/metadata.db exist?
+  stat:
+    path: "{{ calibre_dbpath }}/metadata.db"
+  register: calibre_db
+
+- name: Create database (required since Calibre 3.x) with a sample book
+  include_tasks: create-db.yml
+  when: not calibre_db.stat.exists
+
+
+# 5. RECORD Calibre AS INSTALLED
+
+- name: Record (final) disk space used
+  shell: df -B1 --output=used / | tail -1
+  register: df2
+
+- name: Add 'calibre_disk_usage = {{ df2.stdout|int - df1.stdout|int }}' to {{ iiab_ini_file }}
+  ini_file:
+    path: "{{ iiab_ini_file }}"    # /etc/iiab/iiab.ini
+    section: calibre
+    option: calibre_disk_usage
+    value: "{{ df2.stdout|int - df1.stdout|int }}"
+
+- name: "Set 'calibre_installed: True'"
+  set_fact:
+    calibre_installed: True
+
+- name: "Add 'calibre_installed: True' to {{ iiab_state_file }}"
+  lineinfile:
+    path: "{{ iiab_state_file }}"    # /etc/iiab/iiab_state.yml
+    regexp: '^calibre_installed'
+    line: 'calibre_installed: True'

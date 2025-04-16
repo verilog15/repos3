@@ -1,0 +1,13 @@
+[Unit]
+Description=Provides the Kiwix ZIM File Server
+After=syslog.target network.target local-fs.target
+
+[Service]
+Type=forking
+ExecStart={{ iiab_base }}/kiwix/bin/kiwix-serve --daemon --port {{ kiwix_port }} --nolibrarybutton --library {{ kiwix_library_xml }} --urlRootLocation={{ kiwix_url_plus_slash }} --threads {{ kiwix_threads }}
+TimeoutStartSec=180
+Restart=on-abort
+RestartSec=5s
+
+[Install]
+WantedBy=multi-user.target

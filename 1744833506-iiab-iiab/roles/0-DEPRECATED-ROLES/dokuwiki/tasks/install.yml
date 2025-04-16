@@ -1,0 +1,54 @@
+- name: Download {{ iiab_download_url }}/{{ dokuwiki_version }}.tgz    # iiab_download_url is http://download.iiab.io/packages
+  get_url:
+    url: "{{ iiab_download_url }}/{{ dokuwiki_version }}.tgz"
+    dest: "{{ downloads_dir }}/"
+    timeout: "{{ download_timeout }}"
+  when: internet_available
+
+- name: Unarchive (unpack) it to /library/{{ dokuwiki_version }}
+  unarchive:
+    src: "{{ downloads_dir }}/{{ dokuwiki_version }}.tgz"
+    dest: /library
+    creates: "/library/{{ dokuwiki_version }}/VERSION"
+
+- name: Ensure dir /library/{{ dokuwiki_version }} is owned by {{ apache_user }} with 644/755 permissions
+  file:
+    path: "/library/{{ dokuwiki_version }}"
+    owner: "{{ apache_user }}"
+    mode: u+rw,go+r,go-w    # '0755' had forced 'x' bits for non-dirs
+    state: directory
+    recurse: yes
+
+- name: Symlink /library/dokuwiki -> /library/{{ dokuwiki_version }}
+  #shell: if [ ! -d /library/dokuwiki ]; then ln -sf /library/{{ dokuwiki_version }} /library/dokuwiki; fi
+  #shell: ln -sf /library/{{ dokuwiki_version }} /library/dokuwiki
+  #BOTH LINES ABOVE FAIL TO UPDATE LINK; Ansible approach below works
+  file:
+    src: /library/{{ dokuwiki_version }}
+    path: /library/dokuwiki
+    state: link
+    force: yes
+
+- name: Install /etc/{{ apache_conf_dir }}/dokuwiki.conf from template, for DokuWiki's http://box{{ dokuwiki_url }}
+  template:
+    src: dokuwiki.conf.j2
+    dest: "/etc/{{ apache_conf_dir }}/dokuwiki.conf"
+
+# - name: Symlink /etc/apache2/sites-enabled/dokuwiki.conf to /etc/apache2/sites-available/dokuwiki.conf if dokuwiki_enabled (debuntu)
+#   file:
+#     src: /etc/apache2/sites-available/dokuwiki.conf
+#     path: /etc/apache2/sites-enabled/dokuwiki.conf
+#     state: link
+#   when: dokuwiki_enabled and is_debuntu
+#
+# - name: Remove symlink /etc/apache2/sites-enabled/dokuwiki.conf if not dokuwiki_enabled (debuntu)
+#   file:
+#     path: /etc/apache2/sites-enabled/dokuwiki.conf
+#     state: absent
+#   when: not dokuwiki_enabled and is_debuntu
+
+- name: "Add 'dokuwiki_installed: True' to {{ iiab_state_file }}"
+  lineinfile:
+    dest: "{{ iiab_state_file }}"    # /etc/iiab/iiab_state.yml
+    regexp: '^dokuwiki_installed'
+    line: 'dokuwiki_installed: True'
